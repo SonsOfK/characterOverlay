@@ -13,6 +13,9 @@ const sourceGardok = audioContext.createMediaElementSource(audioGardok);
 sourceMeren.connect(analyserMeren);
 sourceGardok.connect(analyserGardok);
 
+audioMeren.onplay = () => console.log("Audio Meren est joué");
+audioGardok.onplay = () => console.log("Audio Gardok est joué");
+
 analyserMeren.connect(audioContext.destination);
 analyserGardok.connect(audioContext.destination);
 
