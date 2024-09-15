@@ -1,49 +1,54 @@
-const audioMeren = document.getElementById('audioMeren');
-const audioGardok = document.getElementById('audioGardok');
-const imgMeren = document.getElementById('imgMeren');
-const imgGardok = document.getElementById('imgGardok');
+ocument.getElementById('startButton').addEventListener('click', function() {
 
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-const analyserMeren = audioContext.createAnalyser();
-const analyserGardok = audioContext.createAnalyser();
+    const audioMeren = document.getElementById('audioMeren');
+    const audioGardok = document.getElementById('audioGardok');
+    const imgMeren = document.getElementById('imgMeren');
+    const imgGardok = document.getElementById('imgGardok');
 
-const sourceMeren = audioContext.createMediaElementSource(audioMeren);
-const sourceGardok = audioContext.createMediaElementSource(audioGardok);
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const analyserMeren = audioContext.createAnalyser();
+    const analyserGardok = audioContext.createAnalyser();
 
-sourceMeren.connect(analyserMeren);
-sourceGardok.connect(analyserGardok);
+    const sourceMeren = audioContext.createMediaElementSource(audioMeren);
+    const sourceGardok = audioContext.createMediaElementSource(audioGardok);
 
-audioMeren.onplay = () => console.log("Audio Meren est joué");
-audioGardok.onplay = () => console.log("Audio Gardok est joué");
+    sourceMeren.connect(analyserMeren);
+    sourceGardok.connect(analyserGardok);
 
-analyserMeren.connect(audioContext.destination);
-analyserGardok.connect(audioContext.destination);
+    audioMeren.onplay = () => console.log("Audio Meren est joué");
+    audioGardok.onplay = () => console.log("Audio Gardok est joué");
 
-analyserMeren.fftSize = 256;
-analyserGardok.fftSize = 256;
+    analyserMeren.connect(audioContext.destination);
+    analyserGardok.connect(audioContext.destination);
 
-const dataArrayMeren = new Uint8Array(analyserMeren.frequencyBinCount);
-const dataArrayGardok = new Uint8Array(analyserGardok.frequencyBinCount);
+    analyserMeren.fftSize = 256;
+    analyserGardok.fftSize = 256;
 
-function checkVolume() {
-    analyserMeren.getByteFrequencyData(dataArrayMeren);
-    analyserGardok.getByteFrequencyData(dataArrayGardok);
+    const dataArrayMeren = new Uint8Array(analyserMeren.frequencyBinCount);
+    const dataArrayGardok = new Uint8Array(analyserGardok.frequencyBinCount);
 
-    const volumeMeren = dataArrayMeren.reduce((a, b) => a + b) / dataArrayMeren.length; 
-    const volumeGardok = dataArrayGardok.reduce((a, b) => a + b) / dataArrayGardok.length;
+    function checkVolume() {
+        analyserMeren.getByteFrequencyData(dataArrayMeren);
+        analyserGardok.getByteFrequencyData(dataArrayGardok);
 
-    if (volumeMeren > 50) {
-        imgMeren.classList.add('talking');
-    } else {
-        imgMeren.classList.remove('talking');
+        const volumeMeren = dataArrayMeren.reduce((a, b) => a + b) / dataArrayMeren.length; 
+        const volumeGardok = dataArrayGardok.reduce((a, b) => a + b) / dataArrayGardok.length;
+
+        if (volumeMeren > 50) {
+            imgMeren.classList.add('talking');
+        } else {
+            imgMeren.classList.remove('talking');
+        }
+
+        if (volumeGardok > 50) {
+            imgGardok.classList.add('talking');
+        } else {
+            imgGardok.classList.remove('talking');
+        }
     }
 
-    if (volumeGardok > 50) {
-        imgGardok.classList.add('talking');
-    } else {
-        imgGardok.classList.remove('talking');
-    }
-}
+    setInterval(checkVolume, 100);
 
-setInterval(checkVolume, 100);
+    document.getElementById('startButton').style.display = 'none';
 
+});
