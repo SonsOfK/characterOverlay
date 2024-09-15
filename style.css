@@ -1,0 +1,23 @@
+#imgMeren, #imgGardok {
+    position: absolute;
+    bottom: 10px;
+    width: 200px;
+    height: 200px;
+    background-repeat: no-repeat;
+    background-position: center;
+    transition: box-shadow 0.3s ease;
+}
+
+#imgMeren {
+    left: 10px;
+    background-image: url(meren.png);
+}
+
+#imgGardok {
+    right: 10px;
+    background-image: url(meren.png);
+}
+
+.talking {
+    box-shadow: 0 0 20px 5px rgba(255, 255, 9, 0.8);
+}
