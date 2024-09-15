@@ -29,6 +29,9 @@ function checkVolume() {
     const volumeMeren = dataArrayMeren.reduce((a, b) => a + b) / dataArrayMeren.length; 
     const volumeGardok = dataArrayGardok.reduce((a, b) => a + b) / dataArrayGardok.length;
 
+    console.log("Volume 1:", volumeMeren);
+    console.log("Volume 2:", volumeGardok);
+
     if (volumeMeren > 50) {
         imgMeren.classList.add('talking');
     } else {
