@@ -1,23 +1,36 @@
-#imgMeren, #imgGardok {
-    position: absolute;
-    bottom: 10px;
+body {
+    margin: 0;
+    background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .overlay {
+    display: flex;
+    gap: 50px;
+  }
+  
+  .person {
+    position: relative;
     width: 200px;
     height: 200px;
-    background-repeat: no-repeat;
-    background-position: center;
-    transition: box-shadow 0.3s ease;
-}
-
-#imgMeren {
-    left: 10px;
-    background-image: url(meren.png);
-}
-
-#imgGardok {
-    right: 10px;
-    background-image: url(meren.png);
-}
-
-.talking {
-    box-shadow: 0 0 20px 5px rgba(255, 255, 9, 0.8);
-}
+  }
+  
+  .frame {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .portrait {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    image-rendering: pixelated; /* Pour l'effet pixel art */
+  }
+  

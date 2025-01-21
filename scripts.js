@@ -1,54 +1,97 @@
-ocument.getElementById('startButton').addEventListener('click', function() {
+// OBS WebSocket config
+const socket = new WebSocket("ws://localhost:4455");
+const PASSWORD = "59^#tmvbSPT8GR";
 
-    const audioMeren = document.getElementById('audioMeren');
-    const audioGardok = document.getElementById('audioGardok');
-    const imgMeren = document.getElementById('imgMeren');
-    const imgGardok = document.getElementById('imgGardok');
+// Frames and portraits
+const assets = {
+    gardok: {
+        portraitOn: "assets/portrait_gardok_on.png",
+        portraitOff: "assets/portrait_gardok_off.png",
+        frameOn: "assets/frame_on.png",
+        frameOff: "assets/frame_off.png",
+    },
+    meren: {
+        portraitOn: "assets/portrait_meren_on.png",
+        portraitOff: "assets/portrait_meren_off.png",
+        frameOn: "assets/frame_on.png",
+        frameOff: "assets/frame_off.png",
+    },
+};
 
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const analyserMeren = audioContext.createAnalyser();
-    const analyserGardok = audioContext.createAnalyser();
+// HTML elements reference
+const gardokPortrait = document.getElementById("gardok-portrait");
+const gardokFrame = document.getElementById("gardok-frame");
+const merenPortrait = document.getElementById("meren-portrait");
+const merenFrame = document.getElementById("meren-frame");
 
-    const sourceMeren = audioContext.createMediaElementSource(audioMeren);
-    const sourceGardok = audioContext.createMediaElementSource(audioGardok);
+// Audio levels variables
+let gardokLevel = 0;
+let merenLevel = 0;
 
-    sourceMeren.connect(analyserMeren);
-    sourceGardok.connect(analyserGardok);
+// WebSocket connexion
+socket.addEventListener("open", () => {
+    console.log("Connected to OBS WebSocket");
 
-    audioMeren.onplay = () => console.log("Audio Meren est joué");
-    audioGardok.onplay = () => console.log("Audio Gardok est joué");
+    // Authentication
+    socket.send(
+        JSON.stringify({
+            op: 1,
+            d: {
+                rpcVersion: 1,
+                authication: PASSWORD ? btoa(PASSWORD) : undefined,
+            },
+        })
+    );
 
-    analyserMeren.connect(audioContext.destination);
-    analyserGardok.connect(audioContext.destination);
-
-    analyserMeren.fftSize = 256;
-    analyserGardok.fftSize = 256;
-
-    const dataArrayMeren = new Uint8Array(analyserMeren.frequencyBinCount);
-    const dataArrayGardok = new Uint8Array(analyserGardok.frequencyBinCount);
-
-    function checkVolume() {
-        analyserMeren.getByteFrequencyData(dataArrayMeren);
-        analyserGardok.getByteFrequencyData(dataArrayGardok);
-
-        const volumeMeren = dataArrayMeren.reduce((a, b) => a + b) / dataArrayMeren.length; 
-        const volumeGardok = dataArrayGardok.reduce((a, b) => a + b) / dataArrayGardok.length;
-
-        if (volumeMeren > 50) {
-            imgMeren.classList.add('talking');
+    // Periodic audio levels tracking
+    setInterval(() => {
+        // Request for Gardok
+        socket.send(
+            JSON.stringify({
+                requestType: "GetInputVolume",
+                requestId: "gardok-level",
+                requestData: { inputName: "audioGardok" }, // Nom OBS pour Gardok
+            })
+        );
+    
+        // Request for Meren
+        socket.send(
+            JSON.stringify({
+                requestType: "GetInputVolume",
+                requestId: "meren-level",
+                requestData: { inputName: "audioMeren" }, // Nom OBS pour Meren
+            })
+        );
+    }, 100); // Update every 100ms
+});
+    
+// OBS responses management
+socket.addEventListener("message", (event) => {
+    const response = JSON.parse(event.data);
+    
+    // Gardok volume management
+    if (response.requestId === "gardok-level") {
+        gardokLevel = response.responseData?.inputVolumeMul || 0;
+    
+        if (gardokLevel > 0.1) {
+        gardokPortrait.src = assets.gardok.portraitOn;
+        gardokFrame.src = assets.gardok.frameOn;
         } else {
-            imgMeren.classList.remove('talking');
-        }
-
-        if (volumeGardok > 50) {
-            imgGardok.classList.add('talking');
-        } else {
-            imgGardok.classList.remove('talking');
+        gardokPortrait.src = assets.gardok.portraitOff;
+        gardokFrame.src = assets.gardok.frameOff;
         }
     }
-
-    setInterval(checkVolume, 100);
-
-    document.getElementById('startButton').style.display = 'none';
-
+    
+    // Meren volume management
+    if (response.requestId === "meren-level") {
+        merenLevel = response.responseData?.inputVolumeMul || 0;
+    
+        if (merenLevel > 0.1) {
+        merenPortrait.src = assets.meren.portraitOn;
+        merenFrame.src = assets.meren.frameOn;
+        } else {
+        merenPortrait.src = assets.meren.portraitOff;
+        merenFrame.src = assets.meren.frameOff;
+        }
+    }
 });

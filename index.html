@@ -1,20 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Overlay Character</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overlay Stream</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <button id="startButton">Activer Audio</button>
+  <div class="overlay">
+    <!-- Portrait et cadre pour Gardok -->
+    <div id="gardok" class="person">
+      <img id="gardok-frame" class="frame" src="assets/frame_off.png" alt="Frame Gardok">
+      <img id="gardok-portrait" class="portrait" src="assets/portrait_gardok_off.png" alt="Portrait Gardok">
+    </div>
 
-    <div id="imgMeren"></div>
-    <div id="imgGardok"></div>
-
-    <audio id="audioMeren" src="https://vdo.ninja/?push=GuR2iva" autoplay></audio>
-    <audio id="audioGardok" src="Mystic_Grassland.mp3" autoplay></audio>
-
-    <script src="scripts.js"></script>
+    <!-- Portrait et cadre pour Meren -->
+    <div id="meren" class="person">
+      <img id="meren-frame" class="frame" src="assets/frame_off.png" alt="Frame Meren">
+      <img id="meren-portrait" class="portrait" src="assets/portrait_meren_off.png" alt="Portrait Meren">
+    </div>
+  </div>
+  <script src="script.js"></script>
 </body>
 </html>
