@@ -60,6 +60,13 @@ function connectWebSocket() {
 
     socket.addEventListener("message", (event) => {
         const response = JSON.parse(event.data);
+        
+        console.log("Message reçu :", response); // Affiche la réponse brute
+
+        if (response.d && response.d.requestId === "list-audio-sources") {
+            console.log("Réponse complète pour les sources audio :", response.d); // Ajoute un log complet
+            console.log("Sources audio disponibles :", response.d.inputs); // Vérifie si `inputs` existe
+        }
 
         // Gestion des niveaux audio pour Gardok
         if (response.requestId === "gardok-level") {
