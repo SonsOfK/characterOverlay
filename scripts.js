@@ -34,6 +34,16 @@ function connectWebSocket() {
     socket.addEventListener("open", () => {
         console.log("WebSocket connecté à OBS.");
 
+        // Envoyer la commande Identify
+        socket.send(
+            JSON.stringify({
+                op: 1, // Opération d'identification
+                d: {
+                    rpcVersion: 1, // Version du protocole WebSocket OBS
+                },
+            })
+        );
+
         // Lancer les requêtes périodiques pour les niveaux audio
         startAudioLevelRequests();
     });
