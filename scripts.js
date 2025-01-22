@@ -34,19 +34,6 @@ function connectWebSocket() {
     socket.addEventListener("open", () => {
         console.log("WebSocket connecté à OBS.");
 
-        // Envoyer l'authentification si nécessaire
-        if (PASSWORD) {
-            socket.send(
-                JSON.stringify({
-                    op: 1,
-                    d: {
-                        rpcVersion: 1,
-                        authentication: btoa(PASSWORD), // Encodage du mot de passe en base64
-                    },
-                })
-            );
-        }
-
         // Lancer les requêtes périodiques pour les niveaux audio
         startAudioLevelRequests();
     });
@@ -119,15 +106,3 @@ function startAudioLevelRequests() {
 
 // Lancer la connexion WebSocket
 connectWebSocket();
-
-socket.addEventListener("open", () => {
-    console.log("WebSocket ouvert : connexion réussie !");
-});
-  
-socket.addEventListener("close", (event) => {
-    console.log("WebSocket fermé : Code", event.code, "Raison", event.reason);
-});
-  
-socket.addEventListener("error", (error) => {
-    console.error("Erreur WebSocket :", error);
-});
