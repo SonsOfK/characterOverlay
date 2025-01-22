@@ -63,11 +63,6 @@ function connectWebSocket() {
         
         console.log("Message reçu :", response); // Affiche la réponse brute
 
-        if (response.d && response.d.requestId === "list-audio-sources") {
-            console.log("Réponse complète pour les sources audio :", response.d); // Ajoute un log complet
-            console.log("Sources audio disponibles :", response.d.responseData.inputs); // Vérifie si `inputs` existe
-        }
-
         // Gestion des niveaux audio pour Gardok
         if (response.d.requestId === "gardok-level") {
             const gardokLevel = response.d.responseData?.inputVolumeMul || 0;
@@ -85,6 +80,7 @@ function connectWebSocket() {
         if (response.d.requestId === "meren-level") {
             console.log("SON DE MEREN RECU")
             const merenLevel = response.d.responseData?.inputVolumeMul || 0;
+            console.log("Niveau audio de Meren :", merenLevel);
 
             if (merenLevel > 0.1) {
                 merenPortrait.src = assets.meren.portraitOn;
@@ -95,9 +91,6 @@ function connectWebSocket() {
             }
         }
 
-        if (response.d && response.d.requestId === "list-audio-sources") {
-            console.log("Sources audio disponibles :", response.d.inputs);
-        }
     });
 }
 
