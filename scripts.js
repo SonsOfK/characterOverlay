@@ -65,7 +65,7 @@ function connectWebSocket() {
 
         if (response.d && response.d.requestId === "list-audio-sources") {
             console.log("Réponse complète pour les sources audio :", response.d); // Ajoute un log complet
-            console.log("Sources audio disponibles :", response.d.inputs); // Vérifie si `inputs` existe
+            console.log("Sources audio disponibles :", response.d.responseData.inputs); // Vérifie si `inputs` existe
         }
 
         // Gestion des niveaux audio pour Gardok
