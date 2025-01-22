@@ -83,6 +83,7 @@ function connectWebSocket() {
 
         // Gestion des niveaux audio pour Meren
         if (response.requestId === "meren-level") {
+            console.log("SON DE MEREN RECU")
             const merenLevel = response.responseData?.inputVolumeMul || 0;
 
             if (merenLevel > 0.1) {
