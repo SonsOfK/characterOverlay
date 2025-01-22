@@ -69,7 +69,7 @@ function connectWebSocket() {
         }
 
         // Gestion des niveaux audio pour Gardok
-        if (response.requestId === "gardok-level") {
+        if (response.d.requestId === "gardok-level") {
             const gardokLevel = response.responseData?.inputVolumeMul || 0;
 
             if (gardokLevel > 0.1) {
@@ -82,7 +82,7 @@ function connectWebSocket() {
         }
 
         // Gestion des niveaux audio pour Meren
-        if (response.requestId === "meren-level") {
+        if (response.d.requestId === "meren-level") {
             console.log("SON DE MEREN RECU")
             const merenLevel = response.responseData?.inputVolumeMul || 0;
 
