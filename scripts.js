@@ -96,18 +96,24 @@ function startAudioLevelRequests() {
             // Requête pour Gardok
             socket.send(
                 JSON.stringify({
-                    requestType: "GetInputVolume",
-                    requestId: "gardok-level",
-                    requestData: { inputName: "audioGardok" }, // Nom OBS pour Gardok
+                    op: 6,
+                    d: {
+                        requestType: "GetInputVolume",
+                        requestId: "gardok-level",
+                        requestData: { inputName: "audioGardok" }, // Nom OBS pour Gardok   
+                    }
                 })
             );
 
             // Requête pour Meren
             socket.send(
                 JSON.stringify({
-                    requestType: "GetInputVolume",
-                    requestId: "meren-level",
-                    requestData: { inputName: "audioMeren" }, // Nom OBS pour Meren
+                    op: 6,
+                    d: {
+                        requestType: "GetInputVolume",
+                        requestId: "meren-level",
+                        requestData: { inputName: "audioMeren" }, // Nom OBS pour Meren
+                    }
                 })
             );
         }
