@@ -1,5 +1,5 @@
 // OBS WebSocket config
-const socket = new WebSocket("ws://localhost:4455");
+let socket;
 const PASSWORD = "59^#tmvbSPT8GR";
 
 // Frames and portraits
@@ -28,70 +28,106 @@ const merenFrame = document.getElementById("meren-frame");
 let gardokLevel = 0;
 let merenLevel = 0;
 
-// WebSocket connexion
-socket.addEventListener("open", () => {
-    console.log("Connected to OBS WebSocket");
+function connectWebSocket() {
+    socket = new WebSocket("ws://localhost:4455");
 
-    // Authentication
-    socket.send(
-        JSON.stringify({
-            op: 1,
-            d: {
-                rpcVersion: 1,
-                authication: PASSWORD ? btoa(PASSWORD) : undefined,
-            },
-        })
-    );
+    socket.addEventListener("open", () => {
+        console.log("WebSocket connecté à OBS.");
 
-    // Periodic audio levels tracking
+        // Envoyer l'authentification si nécessaire
+        if (PASSWORD) {
+            socket.send(
+                JSON.stringify({
+                    op: 1,
+                    d: {
+                        rpcVersion: 1,
+                        authentication: btoa(PASSWORD), // Encodage du mot de passe en base64
+                    },
+                })
+            );
+        }
+
+        // Lancer les requêtes périodiques pour les niveaux audio
+        startAudioLevelRequests();
+    });
+
+    socket.addEventListener("close", (event) => {
+        console.warn("WebSocket fermé. Code :", event.code, "Raison :", event.reason);
+        // Reconnexion automatique après une déconnexion
+        setTimeout(connectWebSocket, 3000);
+    });
+
+    socket.addEventListener("error", (error) => {
+        console.error("Erreur WebSocket :", error);
+    });
+
+    socket.addEventListener("message", (event) => {
+        const response = JSON.parse(event.data);
+
+        // Gestion des niveaux audio pour Gardok
+        if (response.requestId === "gardok-level") {
+            const gardokLevel = response.responseData?.inputVolumeMul || 0;
+
+            if (gardokLevel > 0.1) {
+                gardokPortrait.src = assets.gardok.portraitOn;
+                gardokFrame.src = assets.gardok.frameOn;
+            } else {
+                gardokPortrait.src = assets.gardok.portraitOff;
+                gardokFrame.src = assets.gardok.frameOff;
+            }
+        }
+
+        // Gestion des niveaux audio pour Meren
+        if (response.requestId === "meren-level") {
+            const merenLevel = response.responseData?.inputVolumeMul || 0;
+
+            if (merenLevel > 0.1) {
+                merenPortrait.src = assets.meren.portraitOn;
+                merenFrame.src = assets.meren.frameOn;
+            } else {
+                merenPortrait.src = assets.meren.portraitOff;
+                merenFrame.src = assets.meren.frameOff;
+            }
+        }
+    });
+}
+
+// Fonction pour envoyer les requêtes de niveaux audio
+function startAudioLevelRequests() {
     setInterval(() => {
-        // Request for Gardok
-        socket.send(
-            JSON.stringify({
-                requestType: "GetInputVolume",
-                requestId: "gardok-level",
-                requestData: { inputName: "audioGardok" }, // Nom OBS pour Gardok
-            })
-        );
-    
-        // Request for Meren
-        socket.send(
-            JSON.stringify({
-                requestType: "GetInputVolume",
-                requestId: "meren-level",
-                requestData: { inputName: "audioMeren" }, // Nom OBS pour Meren
-            })
-        );
-    }, 100); // Update every 100ms
+        if (socket.readyState === WebSocket.OPEN) {
+            // Requête pour Gardok
+            socket.send(
+                JSON.stringify({
+                    requestType: "GetInputVolume",
+                    requestId: "gardok-level",
+                    requestData: { inputName: "audioGardok" }, // Nom OBS pour Gardok
+                })
+            );
+
+            // Requête pour Meren
+            socket.send(
+                JSON.stringify({
+                    requestType: "GetInputVolume",
+                    requestId: "meren-level",
+                    requestData: { inputName: "audioMeren" }, // Nom OBS pour Meren
+                })
+            );
+        }
+    }, 100); // Mise à jour toutes les 100 ms
+}
+
+// Lancer la connexion WebSocket
+connectWebSocket();
+
+socket.addEventListener("open", () => {
+    console.log("WebSocket ouvert : connexion réussie !");
 });
-    
-// OBS responses management
-socket.addEventListener("message", (event) => {
-    const response = JSON.parse(event.data);
-    
-    // Gardok volume management
-    if (response.requestId === "gardok-level") {
-        gardokLevel = response.responseData?.inputVolumeMul || 0;
-    
-        if (gardokLevel > 0.1) {
-        gardokPortrait.src = assets.gardok.portraitOn;
-        gardokFrame.src = assets.gardok.frameOn;
-        } else {
-        gardokPortrait.src = assets.gardok.portraitOff;
-        gardokFrame.src = assets.gardok.frameOff;
-        }
-    }
-    
-    // Meren volume management
-    if (response.requestId === "meren-level") {
-        merenLevel = response.responseData?.inputVolumeMul || 0;
-    
-        if (merenLevel > 0.1) {
-        merenPortrait.src = assets.meren.portraitOn;
-        merenFrame.src = assets.meren.frameOn;
-        } else {
-        merenPortrait.src = assets.meren.portraitOff;
-        merenFrame.src = assets.meren.frameOff;
-        }
-    }
+  
+socket.addEventListener("close", (event) => {
+    console.log("WebSocket fermé : Code", event.code, "Raison", event.reason);
+});
+  
+socket.addEventListener("error", (error) => {
+    console.error("Erreur WebSocket :", error);
 });
