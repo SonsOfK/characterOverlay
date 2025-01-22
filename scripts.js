@@ -86,6 +86,10 @@ function connectWebSocket() {
                 merenFrame.src = assets.meren.frameOff;
             }
         }
+
+        if (response.d && response.d.requestId === "list-audio-sources") {
+            console.log("Sources audio disponibles :", response.d.inputs);
+        }
     });
 }
 
@@ -93,6 +97,16 @@ function connectWebSocket() {
 function startAudioLevelRequests() {
     setInterval(() => {
         if (socket.readyState === WebSocket.OPEN) {
+            socket.send(
+                JSON.stringify({
+                    op: 6, // Opération : Requête
+                    d: {
+                        requestType: "GetInputList",
+                        requestId: "list-audio-sources"
+                    },
+                })
+            );
+
             // Requête pour Gardok
             socket.send(
                 JSON.stringify({
