@@ -1,6 +1,83 @@
 // Initialisation de la connexion avec OBS
-const OBSWebSocket = window.OBSWebSocket || require('obs-websocket-js');
-const obs = new OBSWebSocket();
+const OBS_WEBSOCKET_URL = "ws://localhost:4455";
+const OBS_PASSWORD = "pnjbFLehbi9sxyj1";
+
+let socket;
+
+// WebSocket connection
+function connectToOBS() {
+    socket = new WebSocket(OBS_WEBSOCKET_URL);
+
+    socket.onopen = () => {
+        console.log("Connection to OBS WebSocket successful !");
+        authenticateWithOBS();
+    };
+
+    socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        handleOBSMessage(message);
+    };
+
+    socket.onerror = (error) => {
+        console.error("WebSocket error :", error);
+    };
+
+    socket.onclose = () => {
+        console.log("Connection to OBS WebSocket closed. Try to reconnect...");
+        setTimeout(connectToOBS, 5000);
+    };
+}
+
+// Authentication
+function authenticateWithOBS() {
+    const authRequest = {
+        op: 1,
+        d: {
+            rpcVersion: 1,
+            authentication: OBS_PASSWORD,
+        },
+    };
+    socket.send(JSON.stringify(authRequest));
+}
+
+function handleOBSMessage(message) {
+    switch (message.op) {
+        case 2: // Authentication succeeded
+            console.log("Authentication succeeded !");
+            startAudioMonitoring();
+            break;
+        
+        case 5: // OBS events
+            if (message.d.eventType === "InputVolumeMeter") {
+                handleAudioLevelUpdate(message.d.eventData);
+            }
+            break;
+        
+        default:
+            console.log("OBS WebSocket message :", message);
+    }
+}
+
+function startAudioMonitoring() {
+    // Subscription to audio level events
+    const subscribeRequest = {
+        op: 6,
+        d: {
+            eventSubscriptions: 1 << 1,
+        },
+    };
+    socket.send(JSON.stringify(subscribeRequest));
+}
+
+function handleAudioLevelUpdate(eventData) {
+    const { inputName, inputLevels } = eventData;
+
+    if (inputName === "audioMeren") {
+        updateVisuals(inputLevels.mul, "meren");
+    } else if (inputName === "audioGardok") {
+        updateVisuals(inputLevels.mul, "gardok");
+    }
+}
 
 // Chemins des images
 const assets = {
@@ -18,60 +95,18 @@ const assets = {
     },
 };
 
-// Références HTML
-const merenPortrait = document.getElementById("meren-portrait");
-const merenFrame = document.getElementById("meren-frame");
-const gardokPortrait = document.getElementById("gardok-portrait");
-const gardokFrame = document.getElementById("gardok-frame");
-
-// Connexion à OBS
-obs.connect({ address: "localhost:4455" })
-    .then(() => {
-        console.log("Connecté à OBS WebSocket !");
-
-        // Écouter les changements de niveaux audio
-        startAudioLevelMonitoring();
-    })
-    .catch((err) => {
-        console.error("Erreur de connexion à OBS :", err);
-    });
-
-// Fonction pour surveiller les niveaux audio
-function startAudioLevelMonitoring() {
-    // Récupérer les sources audio configurées dans OBS
-    obs.call("GetInputList")
-        .then((response) => {
-            console.log("Sources audio disponibles :", response.inputs);
-
-            // Configurer les sources audio à surveiller
-            const gardokSource = "audioGardok"; // Nom OBS pour Gardok
-            const merenSource = "audioMeren"; // Nom OBS pour Meren
-
-            // Vérifier les niveaux audio toutes les 100ms
-            setInterval(async () => {
-                // Récupérer le niveau de Gardok
-                const gardokLevel = await obs.call("GetInputVolume", { inputName: gardokSource });
-                handleAudioLevel(gardokLevel.inputVolumeMul, gardokPortrait, gardokFrame, assets.gardok);
-
-                // Récupérer le niveau de Meren
-                const merenLevel = await obs.call("GetInputVolume", { inputName: merenSource });
-                handleAudioLevel(merenLevel.inputVolumeMul, merenPortrait, merenFrame, assets.meren);
-            }, 100);
-        })
-        .catch((err) => {
-            console.error("Erreur lors de la récupération des sources audio :", err);
-        });
-}
-
-// Fonction pour gérer les changements d'images selon le niveau audio
-function handleAudioLevel(level, portraitElement, frameElement, asset) {
-    const minVolumeThreshold = 0.05; // Seuil pour les bruits faibles
+function updateVisuals(level, character) {
+    const minVolumeThreshold = 0.05;
+    const assetsForCharacter = assets[character];
+    const portraitElement = document.getElementById(`${character}-portrait`);
+    const frameElement = document.getElementById(`${character}-frame`);
 
     if (level > minVolumeThreshold) {
-        portraitElement.src = asset.portraitOn;
-        frameElement.src = asset.frameOn;
+        portraitElement.src = assetsForCharacter.portraitOn;
+        frameElement.src = assetsForCharacter.frameOn;
     } else {
-        portraitElement.src = asset.portraitOff;
-        frameElement.src = asset.frameOff;
+        portraitElement.src = assetsForCharacter.portraitOff;
+        frameElement.src = assetsForCharacter.frameOff;
     }
 }
+
