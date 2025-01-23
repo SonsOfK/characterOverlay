@@ -44,33 +44,17 @@ function connectToOBS() {
     };
 }
 
-// Authentication
-function authenticateWithOBS() {
-    const authRequest = {
-        op: 1,
-        d: {
-            rpcVersion: 1,
-            authentication: OBS_PASSWORD,
-        },
-    };
-    socket.send(JSON.stringify(authRequest));
-}
-
 function handleOBSMessage(message) {
-    switch (message.op) {
-        case 2: // Authentication succeeded
-            console.log("Authentication succeeded !");
-            startAudioMonitoring();
-            break;
-        
+    switch (message.op) {        
         case 5: // OBS events
+            console.log("message received :", message)
             if (message.d.eventType === "InputVolumeMeter") {
                 handleAudioLevelUpdate(message.d.eventData);
             }
             break;
         
         default:
-            console.log("OBS WebSocket message :", message);
+            console.log("OBS WebSocket message unprocessed :", message);
     }
 }
 
