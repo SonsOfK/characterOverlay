@@ -26,7 +26,7 @@ function connectToOBS() {
 
     socket.onopen = () => {
         console.log("Connection to OBS WebSocket successful !");
-        authenticateWithOBS();
+        startAudioMonitoring();
     };
 
     socket.onmessage = (event) => {
