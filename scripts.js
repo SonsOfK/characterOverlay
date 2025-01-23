@@ -2,6 +2,22 @@
 const OBS_WEBSOCKET_URL = "ws://localhost:4455";
 const OBS_PASSWORD = "pnjbFLehbi9sxyj1";
 
+// Chemins des images
+const assets = {
+    gardok: {
+        portraitOn: "assets/portrait_gardok_on.png",
+        portraitOff: "assets/portrait_gardok_off.png",
+        frameOn: "assets/frame_on.png",
+        frameOff: "assets/frame_off.png",
+    },
+    meren: {
+        portraitOn: "assets/portrait_meren_on.png",
+        portraitOff: "assets/portrait_meren_off.png",
+        frameOn: "assets/frame_on.png",
+        frameOff: "assets/frame_off.png",
+    },
+};
+
 let socket;
 
 // WebSocket connection
@@ -79,22 +95,6 @@ function handleAudioLevelUpdate(eventData) {
     }
 }
 
-// Chemins des images
-const assets = {
-    gardok: {
-        portraitOn: "assets/portrait_gardok_on.png",
-        portraitOff: "assets/portrait_gardok_off.png",
-        frameOn: "assets/frame_on.png",
-        frameOff: "assets/frame_off.png",
-    },
-    meren: {
-        portraitOn: "assets/portrait_meren_on.png",
-        portraitOff: "assets/portrait_meren_off.png",
-        frameOn: "assets/frame_on.png",
-        frameOff: "assets/frame_off.png",
-    },
-};
-
 function updateVisuals(level, character) {
     const minVolumeThreshold = 0.05;
     const assetsForCharacter = assets[character];
@@ -110,3 +110,5 @@ function updateVisuals(level, character) {
     }
 }
 
+// Establish connection
+connectToOBS();
