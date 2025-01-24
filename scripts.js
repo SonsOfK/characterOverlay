@@ -1,6 +1,11 @@
 // Initialisation de la connexion avec OBS
+import { OBSWebSocket } from 'obs-websocket-js';
+import { WebSocket } from 'ws';
+
+const obs = new OBSWebSocket();
+
 const OBS_WEBSOCKET_URL = "ws://localhost:4455";
-const OBS_PASSWORD = "pnjbFLehbi9sxyj1";
+const OBS_PASSWORD = "cGYMCwKvne3uziCf";
 
 // Chemins des images
 const assets = {
@@ -18,83 +23,45 @@ const assets = {
     },
 };
 
-let socket;
+async function connectToOBS() {
+    try {
+        await obs.connect(OBS_WEBSOCKET_URL, OBS_PASSWORD);
+        console.log('Connecté à OBS WebSocket');
 
-// WebSocket connection
-function connectToOBS() {
-    socket = new WebSocket(OBS_WEBSOCKET_URL);
+        await obs.call('Subscribe', { events: ['InputVolumeMeters'] });
 
-    socket.onopen = () => {
-        console.log("Connection to OBS WebSocket successful !");
-        startAudioMonitoring();
-    };
+        obs.on('InputVolumeMeters', (data) => {
+            data.inputs.forEach((input) => {
+                if (input.inputName === 'audioGardok') {
+                    const gardokVolume = input.inputVolumeMul;
+                    const gardokPortrait = document.getElementById('gardok-portrait');
+                    const gardokFrame = document.getElementById('gardok-frame');
+                    if (gardokVolume > 0.1) {
+                        gardokPortrait.src = assets.gardok.portraitOn;
+                        gardokFrame.src = assets.gardok.frameOn;
+                    } else {
+                        gardokPortrait.src = assets.gardok.portraitOff;
+                        gardokFrame.src = assets.gardok.frameOff;
+                    }
+                }
 
-    socket.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        console.log("Message received from OBS :", message);
-        handleOBSMessage(message);
-    };
-
-    socket.onerror = (error) => {
-        console.error("WebSocket error :", error);
-    };
-
-    socket.onclose = () => {
-        console.log("Connection to OBS WebSocket closed. Try to reconnect...");
-        setTimeout(connectToOBS, 5000);
-    };
+                if (input.inputName === 'audioMeren') {
+                    const merenVolume = input.inputVolumeMul;
+                    const merenPortrait = document.getElementById('meren-portrait');
+                    const merenFrame = document.getElementById('meren-frame');
+                    if (merenVolume > 0.1) {
+                        merenPortrait.src = assets.meren.portraitOn;
+                        merenFrame.src = assets.meren.frameOn;
+                    } else {
+                        merenPortrait.src = assets.meren.portraitOff;
+                        merenFrame.src = assets.meren.frameOff;
+                    }
+                }
+            });
+        });
+    } catch (err) [
+        console.error('Erreur de connexion à OBS :', err);
+    ]
 }
 
-function handleOBSMessage(message) {
-    switch (message.op) {        
-        case 5: // OBS events
-            console.log("message received :", message)
-            if (message.d.eventType === "InputVolumeMeter") {
-                handleAudioLevelUpdate(message.d.eventData);
-            }
-            break;
-        
-        default:
-            console.log("OBS WebSocket message unprocessed :", message);
-    }
-}
-
-function startAudioMonitoring() {
-    // Subscription to audio level events
-    const subscribeRequest = {
-        op: 6,
-        d: {
-            eventSubscriptions: 1 << 1,
-        },
-    };
-    socket.send(JSON.stringify(subscribeRequest));
-    console.log("Subscription request sent :", subscribeRequest);
-}
-
-function handleAudioLevelUpdate(eventData) {
-    const { inputName, inputLevels } = eventData;
-
-    if (inputName === "audioMeren") {
-        updateVisuals(inputLevels.mul, "meren");
-    } else if (inputName === "audioGardok") {
-        updateVisuals(inputLevels.mul, "gardok");
-    }
-}
-
-function updateVisuals(level, character) {
-    const minVolumeThreshold = 0.05;
-    const assetsForCharacter = assets[character];
-    const portraitElement = document.getElementById(`${character}-portrait`);
-    const frameElement = document.getElementById(`${character}-frame`);
-
-    if (level > minVolumeThreshold) {
-        portraitElement.src = assetsForCharacter.portraitOn;
-        frameElement.src = assetsForCharacter.frameOn;
-    } else {
-        portraitElement.src = assetsForCharacter.portraitOff;
-        frameElement.src = assetsForCharacter.frameOff;
-    }
-}
-
-// Establish connection
 connectToOBS();
