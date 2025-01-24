@@ -1,12 +1,5 @@
-// Initialisation de la connexion avec OBS
-import { OBSWebSocket } from 'obs-websocket-js';
-
-const obs = new OBSWebSocket();
-
 const OBS_WEBSOCKET_URL = "ws://localhost:4455";
-const OBS_PASSWORD = "cGYMCwKvne3uziCf";
 
-// Chemins des images
 const assets = {
     gardok: {
         portraitOn: "assets/portrait_gardok_on.png",
@@ -22,45 +15,58 @@ const assets = {
     },
 };
 
-async function connectToOBS() {
-    try {
-        await obs.connect(OBS_WEBSOCKET_URL, OBS_PASSWORD);
-        console.log('Connecté à OBS WebSocket');
+const sources = { gardok: "audioGardok", meren: "audioMeren" };
 
-        await obs.call('Subscribe', { events: ['InputVolumeMeters'] });
+// Met à jour les images selon l'état actif/inactif
+function updateImages(characterId, isActive) {
+    const frame = document.getElementById(`${characterId}-frame`);
+    const portrait = document.getElementById(`${characterId}-portrait`);
 
-        obs.on('InputVolumeMeters', (data) => {
-            data.inputs.forEach((input) => {
-                if (input.inputName === 'audioGardok') {
-                    const gardokVolume = input.inputVolumeMul;
-                    const gardokPortrait = document.getElementById('gardok-portrait');
-                    const gardokFrame = document.getElementById('gardok-frame');
-                    if (gardokVolume > 0.1) {
-                        gardokPortrait.src = assets.gardok.portraitOn;
-                        gardokFrame.src = assets.gardok.frameOn;
-                    } else {
-                        gardokPortrait.src = assets.gardok.portraitOff;
-                        gardokFrame.src = assets.gardok.frameOff;
-                    }
-                }
-
-                if (input.inputName === 'audioMeren') {
-                    const merenVolume = input.inputVolumeMul;
-                    const merenPortrait = document.getElementById('meren-portrait');
-                    const merenFrame = document.getElementById('meren-frame');
-                    if (merenVolume > 0.1) {
-                        merenPortrait.src = assets.meren.portraitOn;
-                        merenFrame.src = assets.meren.frameOn;
-                    } else {
-                        merenPortrait.src = assets.meren.portraitOff;
-                        merenFrame.src = assets.meren.frameOff;
-                    }
-                }
-            });
-        });
-    } catch (err) {
-        console.error('Erreur de connexion à OBS :', err);
-    }
+    frame.src = isActive ? assets[characterId].frameOn : assets[characterId].frameOff;
+    portrait.src = isActive ? assets[characterId].portraitOn : assets[characterId].portraitOff;
 }
 
+// Gère la connexion WebSocket et les niveaux audio
+function connectToOBS() {
+    const ws = new WebSocket(OBS_WEBSOCKET_URL);
+
+    ws.onopen = () => {
+        console.log("Connected to OBS WebSocket");
+        // Abonnement aux niveaux audio
+        ws.send(
+            JSON.stringify({
+                op: 1,
+                d: {
+                requestType: "GetInputList",
+                requestId: "1",
+                },
+            })
+        );
+    };
+
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.op === 0 && data.d && data.d.inputs) {
+            for (const input of data.d.inputs) {
+                if (input.inputName === sources.gardok) {
+                updateImages("gardok", input.inputVolumeMul > 0.05); // Seuil de volume pour "actif"
+                } else if (input.inputName === sources.meren) {
+                updateImages("meren", input.inputVolumeMul > 0.05);
+                }
+            }
+        }
+    };
+
+    ws.onclose = () => {
+        console.warn("WebSocket closed. Reconnecting in 5 seconds...");
+        setTimeout(connectToOBS, 5000); // Reconnexion automatique
+    };
+
+    ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        ws.close(); // Tente une reconnexion propre
+    };
+}
+
+// Initialisation
 connectToOBS();
