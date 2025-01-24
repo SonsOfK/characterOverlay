@@ -26,21 +26,24 @@ function updateImages(characterId, isActive) {
     portrait.src = isActive ? assets[characterId].portraitOn : assets[characterId].portraitOff;
 }
 
+let isReconnecting = false;
+
 // Gère la connexion WebSocket et les niveaux audio
 function connectToOBS() {
+    if (isReconnecting) return;
+    isReconnecting = true;
+
     const ws = new WebSocket(OBS_WEBSOCKET_URL);
 
     ws.onopen = () => {
         console.log("Connected to OBS WebSocket");
+
+        isReconnecting = false;
+
         // Abonnement aux niveaux audio
-        ws.send(
-            JSON.stringify({
-                op: 1,
-                d: {
-                    rpcVersion: 1
-                },
-            })
-        );
+        ws.send(JSON.stringify({op: 1, d: { rpcVersion: 1 } }));
+
+        ws.send(JSON.stringify({op: 6, d: { requests: [{ requestType: "GetInputList", requestId: "inputs" }] } }));
     };
 
     ws.onmessage = (event) => {
@@ -48,7 +51,7 @@ function connectToOBS() {
 
         console.log("Message reçu depuis OBS: ", data)
 
-        if (data.op === 0 && data.d && data.d.inputs) {
+        if (data.op === 0 && data.d && data.d?.inputs) {
             for (const input of data.d.inputs) {
 
                 console.log(`Source: ${input.inputName}, Volume: ${input.inputVolumeMul}`);
@@ -64,25 +67,16 @@ function connectToOBS() {
 
     ws.onclose = () => {
         console.warn("WebSocket closed. Reconnecting in 5 seconds...");
-        setTimeout(connectToOBS, 5000); // Reconnexion automatique
+        setTimeout(() => {
+            isReconnecting = false;
+            connectToOBS();
+        }, 5000);
     };
 
     ws.onerror = (error) => {
         console.error("WebSocket error:", error);
         ws.close(); // Tente une reconnexion propre
     };
-
-    setInterval(() => {
-        ws.send(JSON.stringify({
-          op: 6, // Type "RequestBatch" dans OBS v5.x
-          d: {
-            requests: [
-              { requestType: "GetInputVolume", requestId: "gardok-volume", requestData: { inputName: "audioGardok" } },
-              { requestType: "GetInputVolume", requestId: "meren-volume", requestData: { inputName: "audioMeren" } }
-            ]
-          }
-        }));
-      }, 1000); // Toutes les secondes
 }
 
 // Initialisation
