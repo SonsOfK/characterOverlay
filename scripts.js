@@ -45,8 +45,14 @@ function connectToOBS() {
 
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
+
+        console.log("Message reçu depuis OBS: ", data)
+
         if (data.op === 0 && data.d && data.d.inputs) {
             for (const input of data.d.inputs) {
+
+                console.log(`Source: ${input.inputName}, Volume: ${input.inputVolumeMul}`);
+
                 if (input.inputName === sources.gardok) {
                 updateImages("gardok", input.inputVolumeMul > 0.05); // Seuil de volume pour "actif"
                 } else if (input.inputName === sources.meren) {
@@ -65,6 +71,18 @@ function connectToOBS() {
         console.error("WebSocket error:", error);
         ws.close(); // Tente une reconnexion propre
     };
+
+    setInterval(() => {
+        ws.send(JSON.stringify({
+          op: 6, // Type "RequestBatch" dans OBS v5.x
+          d: {
+            requests: [
+              { requestType: "GetInputVolume", requestId: "gardok-volume", requestData: { inputName: "audioGardok" } },
+              { requestType: "GetInputVolume", requestId: "meren-volume", requestData: { inputName: "audioMeren" } }
+            ]
+          }
+        }));
+      }, 1000); // Toutes les secondes
 }
 
 // Initialisation
