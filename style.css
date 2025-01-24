@@ -12,19 +12,20 @@ body {
   height: 100%;
 }
 
-.frame-container {
+#meren {
   position: absolute;
   bottom: 20px;
+  left: 20px;
   width: 200px;
   height: 200px;
 }
 
-#meren {
-  left: 20px;
-}
-
 #gardok {
+  position: absolute;
+  bottom: 20px;
   right: 20px;
+  width: 200px;
+  height: 200px;
 }
 
 .frame {
