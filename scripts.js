@@ -37,8 +37,7 @@ function connectToOBS() {
             JSON.stringify({
                 op: 1,
                 d: {
-                requestType: "GetInputList",
-                requestId: "1",
+                    rpcVersion: 1
                 },
             })
         );
