@@ -1,5 +1,5 @@
 import './style.css'
-import OBSWebSocket from 'obs-websocket-js/json';
+import OBSWebSocket from 'obs-websocket-js';
 
 async function main() {
   const obs = new OBSWebSocket();
