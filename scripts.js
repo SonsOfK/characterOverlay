@@ -31,6 +31,7 @@ function connectToOBS() {
 
     socket.onmessage = (event) => {
         const message = JSON.parse(event.data);
+        console.log("Message received from OBS :", message);
         handleOBSMessage(message);
     };
 
@@ -67,6 +68,7 @@ function startAudioMonitoring() {
         },
     };
     socket.send(JSON.stringify(subscribeRequest));
+    console.log("Subscription request sent :", subscribeRequest);
 }
 
 function handleAudioLevelUpdate(eventData) {
