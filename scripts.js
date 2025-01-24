@@ -1,6 +1,5 @@
 // Initialisation de la connexion avec OBS
 import { OBSWebSocket } from 'obs-websocket-js';
-import { WebSocket } from 'ws';
 
 const obs = new OBSWebSocket();
 
@@ -59,9 +58,9 @@ async function connectToOBS() {
                 }
             });
         });
-    } catch (err) [
+    } catch (err) {
         console.error('Erreur de connexion à OBS :', err);
-    ]
+    }
 }
 
 connectToOBS();
