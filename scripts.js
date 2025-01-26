@@ -1,5 +1,5 @@
 // Initialisation de la connexion avec OBS
-const OBSWebSocket = require('obs-websocket-js');
+const OBSWebSocket = require('obs-websocket-js').OBSWebSocket;
 const obs = new OBSWebSocket();
 
 // Chemins des images
