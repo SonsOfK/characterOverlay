@@ -29,11 +29,17 @@ const gardokFrame = document.getElementById("gardok-frame");
         // Écouter les niveaux audio
         obs.on("InputVolumeMeters", (data) => {
             data.inputs.forEach((input) => {
-                if (input.inputName === "audioGardok") {
-                    handleAudioLevel(input.inputLevelsDb[0], gardokPortrait, gardokFrame, assets.gardok);
-                }
+                // Gérer les niveaux pour chaque source
                 if (input.inputName === "audioMeren") {
-                    handleAudioLevel(input.inputLevelsDb[0], merenPortrait, merenFrame, assets.meren);
+                    const levels = input.inputLevelsMul.flat(); // Tous les canaux combinés
+                    const maxLevel = Math.max(...levels); // Niveau maximum
+                    handleAudioLevel(maxLevel, merenPortrait, merenFrame, assets.meren);
+                }
+
+                if (input.inputName === "audioGardok") {
+                    const levels = input.inputLevelsMul.flat();
+                    const maxLevel = Math.max(...levels);
+                    handleAudioLevel(maxLevel, gardokPortrait, gardokFrame, assets.gardok);
                 }
             });
         });
@@ -44,7 +50,7 @@ const gardokFrame = document.getElementById("gardok-frame");
 
 // Fonction pour gérer les changements d'images selon le niveau audio
 function handleAudioLevel(levelDb, portraitElement, frameElement, asset) {
-    const minVolumeThreshold = -40; // Seuil en dB pour ignorer les bruits faibles
+    const minVolumeThreshold = 0.01; // Seuil en dB pour ignorer les bruits faibles
 
     if (levelDb > minVolumeThreshold) {
         portraitElement.src = asset.portraitOn;
