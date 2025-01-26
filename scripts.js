@@ -50,7 +50,7 @@ const gardokFrame = document.getElementById("gardok-frame");
 
 // Fonction pour gérer les changements d'images selon le niveau audio
 function handleAudioLevel(levelDb, portraitElement, frameElement, asset) {
-    const minVolumeThreshold = 0.01; // Seuil en dB pour ignorer les bruits faibles
+    const minVolumeThreshold = 0.1; // Seuil en dB pour ignorer les bruits faibles
 
     if (levelDb > minVolumeThreshold) {
         portraitElement.src = asset.portraitOn;
