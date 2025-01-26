@@ -22,40 +22,38 @@ const gardokFrame = document.getElementById("gardok-frame");
 
 (async () => {
     try {
-        await obs.connect("ws://localhost:4455", "ton_mot_de_passe");
+        // Connexion à OBS
+        await obs.connect("ws://localhost:4455", "ton_mot_de_passe"); // Remplace par ton mot de passe ou omets-le
         console.log("Connecté à OBS WebSocket !");
 
-        startAudioLevelMonitoring();
+        // Souscrire à l'événement `InputVolumeMeters`
+        await obs.call("Subscribe", {
+            eventSubscriptions: 1 << 16, // EventSubscription::InputVolumeMeters
+        });
+
+        console.log("Abonné à InputVolumeMeters");
+
+        // Écouter les niveaux audio
+        obs.on("InputVolumeMeters", (data) => {
+            data.inputs.forEach((input) => {
+                if (input.inputName === "audioGardok") {
+                    handleAudioLevel(input.inputLevelsDb[0], gardokPortrait, gardokFrame, assets.gardok);
+                }
+                if (input.inputName === "audioMeren") {
+                    handleAudioLevel(input.inputLevelsDb[0], merenPortrait, merenFrame, assets.meren);
+                }
+            });
+        });
     } catch (error) {
-        console.error("Erreur de connexion :", error);
+        console.error("Erreur de connexion ou de souscription :", error);
     }
 })();
 
-async function startAudioLevelMonitoring() {
-    await obs.call("Subscribe", {
-        eventSubscriptions: 1 << 16, // Abonne-toi à InputVolumeMeters
-    });
+// Fonction pour gérer les changements d'images selon le niveau audio
+function handleAudioLevel(levelDb, portraitElement, frameElement, asset) {
+    const minVolumeThreshold = -40; // Seuil en dB pour ignorer les bruits faibles
 
-    console.log("Abonné aux événements InputVolumeMeters");
-
-    // Écoute des événements InputVolumeMeters
-    obs.on("InputVolumeMeters", (data) => {
-        // Parcourir les niveaux audio des sources
-        data.inputs.forEach((input) => {
-            if (input.inputName === "audioGardok") {
-                handleAudioLevel(input.inputLevelsMul[0], gardokPortrait, gardokFrame, assets.gardok);
-            }
-            if (input.inputName === "audioMeren") {
-                handleAudioLevel(input.inputLevelsMul[0], merenPortrait, merenFrame, assets.meren);
-            }
-        });
-    });
-}
-
-function handleAudioLevel(level, portraitElement, frameElement, asset) {
-    const minVolumeThreshold = 0.05;
-
-    if (level > minVolumeThreshold) {
+    if (levelDb > minVolumeThreshold) {
         portraitElement.src = asset.portraitOn;
         frameElement.src = asset.frameOn;
     } else {
