@@ -31,26 +31,30 @@ const gardokFrame = document.getElementById("gardok-frame");
     }
 })();
 
-function startAudioLevelMonitoring() {
+async function startAudioLevelMonitoring() {
     const gardokSource = "audioGardok";
     const merenSource = "audioMeren";
 
-    setInterval(async () => {
-        try {
-            const gardokLevel = await getAudioLevel(gardokSource);
-            handleAudioLevel(gardokLevel, gardokPortrait, gardokFrame, assets.gardok);
+    try {
+        await obs.call("Subscribe", {
+            eventSubscriptions: 1 << 8,
+        });
 
-            const merenLevel = await getAudioLevel(merenSource);
-            handleAudioLevel(merenLevel, merenPortrait, merenFrame, assets.meren);
-        } catch (error) {
-            console.error("Erreur lors de la récupération des niveaux audio :", error);
-        }
-    }, 100);
-}
+        console.log("Abonné aux niveaux audio des sources");
 
-async function getAudioLevel(sourceName) {
-    const response = await obs.call("GetInputVolume", { inputName: sourceName });
-    return response.inputVolumeMul || 0;
+        obs.on("InputVolumeMeters", (data) => {
+            data.inputs.forEach((input) => {
+                if (input.inputName === gardokSource) {
+                    handleAudioLevel(input.inputLevelsMul[0], gardokPortrait, gardokFrame, assets.gardok);
+                }
+                if (input.inputName === merenSource) {
+                    handleAudioLevel(input.inputLevelsMul[0], merenPortrait, merenFrame, assets.meren);
+                }
+            });
+        });
+    } catch (error) {
+        console.error("Erreur lors de l'abonnement aux niveaux audio :", error);
+    }
 }
 
 function handleAudioLevel(level, portraitElement, frameElement, asset) {
