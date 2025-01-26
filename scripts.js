@@ -20,7 +20,7 @@ const merenFrame = document.getElementById("meren-frame");
 const gardokPortrait = document.getElementById("gardok-portrait");
 const gardokFrame = document.getElementById("gardok-frame");
 
-obs.connect({ address: "localhost:4455"})
+obs.connect({ address: "ws://127.0.0.1:4455"})
     .then(() => {
         console.log("Connecté à OBS WebSocket !");
 
