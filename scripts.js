@@ -1,4 +1,3 @@
-const OBSWebSocket = require('obs-websocket-js').OBSWebSocket;
 const obs = new OBSWebSocket();
 
 const assets = {
