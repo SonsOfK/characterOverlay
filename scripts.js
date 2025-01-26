@@ -23,18 +23,8 @@ const gardokFrame = document.getElementById("gardok-frame");
 (async () => {
     try {
         // Connexion à OBS
-        await obs.connect("ws://localhost:4455"); // Remplace par ton mot de passe ou omets-le
+        await obs.connect("ws://localhost:4455", "", { eventSubscriptions: OBSWebSocket.EventSubscription.All | OBSWebSocket.EventSubscription.InputVolumeMeters, });
         console.log("Connecté à OBS WebSocket !");
-
-        const version = await obs.call("GetVersion");
-        console.log("Version OBS WebSocket :", version);
-        
-        // Souscrire à l'événement `InputVolumeMeters`
-        await obs.call("Subscribe", {
-            eventSubscriptions: 1 << 16, // EventSubscription::InputVolumeMeters
-        });
-
-        console.log("Abonné à InputVolumeMeters");
 
         // Écouter les niveaux audio
         obs.on("InputVolumeMeters", (data) => {
