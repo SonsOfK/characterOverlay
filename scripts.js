@@ -23,7 +23,7 @@ const gardokFrame = document.getElementById("gardok-frame");
 (async () => {
     try {
         // Connexion à OBS
-        await obs.connect("ws://localhost:4455", "ton_mot_de_passe"); // Remplace par ton mot de passe ou omets-le
+        await obs.connect("ws://localhost:4455"); // Remplace par ton mot de passe ou omets-le
         console.log("Connecté à OBS WebSocket !");
 
         // Souscrire à l'événement `InputVolumeMeters`
