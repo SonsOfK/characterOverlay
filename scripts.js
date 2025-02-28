@@ -39,13 +39,13 @@ const delayBeforeHiding = 1000; // 1s
                 if (input.inputName === "audioMeren") {
                     const levels = input.inputLevelsMul.flat(); // Tous les canaux combinés
                     const maxLevel = Math.max(...levels); // Niveau maximum
-                    handleAudioLevel(maxLevel, merenPortrait, merenFrame, assets.meren);
+                    handleAudioLevel(maxLevel, merenPortrait, merenFrame, assets.meren, timers.meren);
                 }
 
                 if (input.inputName === "audioGardok") {
                     const levels = input.inputLevelsMul.flat();
                     const maxLevel = Math.max(...levels);
-                    handleAudioLevel(maxLevel, gardokPortrait, gardokFrame, assets.gardok);
+                    handleAudioLevel(maxLevel, gardokPortrait, gardokFrame, assets.gardok, timers.gardok);
                 }
             });
         });
@@ -55,14 +55,27 @@ const delayBeforeHiding = 1000; // 1s
 })();
 
 // Fonction pour gérer les changements d'images selon le niveau audio
-function handleAudioLevel(levelDb, portraitElement, frameElement, asset) {
+function handleAudioLevel(levelDb, portraitElement, frameElement, asset, timer) {
     const minVolumeThreshold = 0.08; // Seuil en dB pour ignorer les bruits faibles
 
     if (levelDb > minVolumeThreshold) {
+        // Annule le timer si la personne parle
+        if (timer) {
+            clearTimeout(timer);
+            timer = null;
+        }
+
+        // Afficher immédiatement l'image "On"
         portraitElement.src = asset.portraitOn;
         frameElement.src = asset.frameOn;
     } else {
-        portraitElement.src = asset.portraitOff;
-        frameElement.src = asset.frameOff;
+        // Déclencher un timer pour éviter un changement immédiat à "Off"
+        if (!timer) {
+            timer = setTimeout(() => {
+                portraitElement.src = asset.portraitOff;
+                frameElement.src = asset.frameOff;
+                timer = null;
+            }, delayBeforeHiding);
+        }
     }
 }
