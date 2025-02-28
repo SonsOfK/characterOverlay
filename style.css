@@ -33,6 +33,7 @@ body {
   width: 100%;
   height: 100%;
   z-index: 1;
+  transition: opacity 0.1s ease-in-out;
 }
 
 .portrait {
@@ -42,4 +43,13 @@ body {
   top: 5%;
   left: 5%;
   z-index: 2;
+  transition: opacity 0.1s ease-in-out;
+}
+
+.inactive {
+  opacity: 0.5;
+}
+
+.active {
+  opacity: 1;
 }
