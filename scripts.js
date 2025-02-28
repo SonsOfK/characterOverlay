@@ -39,13 +39,13 @@ const delayBeforeHiding = 1000; // 1s
                 if (input.inputName === "audioMeren") {
                     const levels = input.inputLevelsMul.flat(); // Tous les canaux combinés
                     const maxLevel = Math.max(...levels); // Niveau maximum
-                    handleAudioLevel(maxLevel, merenPortrait, merenFrame, assets.meren, timers.meren);
+                    handleAudioLevel(maxLevel, merenPortrait, merenFrame, assets.meren);
                 }
 
                 if (input.inputName === "audioGardok") {
                     const levels = input.inputLevelsMul.flat();
                     const maxLevel = Math.max(...levels);
-                    handleAudioLevel(maxLevel, gardokPortrait, gardokFrame, assets.gardok, timers.gardok);
+                    handleAudioLevel(maxLevel, gardokPortrait, gardokFrame, assets.gardok);
                 }
             });
         });
@@ -55,24 +55,14 @@ const delayBeforeHiding = 1000; // 1s
 })();
 
 // Fonction pour gérer les changements d'images selon le niveau audio
-function handleAudioLevel(levelDb, portraitElement, frameElement, asset, timer) {
+function handleAudioLevel(levelDb, portraitElement, frameElement, asset) {
     const minVolumeThreshold = 0.08; // Seuil en dB pour ignorer les bruits faibles
 
     if (levelDb > minVolumeThreshold) {
-        if (timer) {
-            clearTimeout(timer);
-            timer = null;
-        }
-
         portraitElement.src = asset.portraitOn;
         frameElement.src = asset.frameOn;
     } else {
-        if (!timer) {
-            timer = setTimeout(() => {
-                portraitElement.src = asset.portraitOff;
-                frameElement.src = asset.frameOff;
-                timer = null;
-            }, delayBeforeHiding);
-        }
+        portraitElement.src = asset.portraitOff;
+        frameElement.src = asset.frameOff;
     }
 }
