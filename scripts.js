@@ -20,6 +20,12 @@ const merenFrame = document.getElementById("meren-frame");
 const gardokPortrait = document.getElementById("gardok-portrait");
 const gardokFrame = document.getElementById("gardok-frame");
 
+let timers =  {
+    meren: null,
+    gardok: null,
+}
+const delayBeforeHiding = 1000; // 1s
+
 (async () => {
     try {
         // Connexion à OBS
@@ -33,13 +39,13 @@ const gardokFrame = document.getElementById("gardok-frame");
                 if (input.inputName === "audioMeren") {
                     const levels = input.inputLevelsMul.flat(); // Tous les canaux combinés
                     const maxLevel = Math.max(...levels); // Niveau maximum
-                    handleAudioLevel(maxLevel, merenPortrait, merenFrame, assets.meren);
+                    handleAudioLevel(maxLevel, merenPortrait, merenFrame, assets.meren, timers.meren);
                 }
 
                 if (input.inputName === "audioGardok") {
                     const levels = input.inputLevelsMul.flat();
                     const maxLevel = Math.max(...levels);
-                    handleAudioLevel(maxLevel, gardokPortrait, gardokFrame, assets.gardok);
+                    handleAudioLevel(maxLevel, gardokPortrait, gardokFrame, assets.gardok, timers.gardok);
                 }
             });
         });
@@ -49,14 +55,24 @@ const gardokFrame = document.getElementById("gardok-frame");
 })();
 
 // Fonction pour gérer les changements d'images selon le niveau audio
-function handleAudioLevel(levelDb, portraitElement, frameElement, asset) {
+function handleAudioLevel(levelDb, portraitElement, frameElement, asset, timer) {
     const minVolumeThreshold = 0.08; // Seuil en dB pour ignorer les bruits faibles
 
     if (levelDb > minVolumeThreshold) {
+        if (timer) {
+            clearTimeout(timer);
+            timer = null;
+        }
+
         portraitElement.src = asset.portraitOn;
         frameElement.src = asset.frameOn;
     } else {
-        portraitElement.src = asset.portraitOff;
-        frameElement.src = asset.frameOff;
+        if (!timer) {
+            timer = setTimeout(() => {
+                portraitElement.src = asset.portraitOff;
+                frameElement.src = asset.frameOff;
+                timer = null;
+            }, delayBeforeHiding);
+        }
     }
 }
