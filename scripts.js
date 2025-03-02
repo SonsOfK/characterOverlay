@@ -3,11 +3,11 @@ const obs = new OBSWebSocket();
 const assets = {
     gardok: {
         portraitOn: "assets/gardok_full_on.png",
-        portraitOff: "assets/gardok__full_off.png",
+        portraitOff: "assets/gardok_full_off.png",
     },
     meren: {
         portraitOn: "assets/meren_full_on.png",
-        portraitOff: "assets/meren__full_off.png",
+        portraitOff: "assets/meren_full_off.png",
     },
 };
 
