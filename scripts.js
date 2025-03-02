@@ -26,7 +26,7 @@ let timers =  {
 }
 
 const minVolumeThreshold = 0.08; // Seuil en dB pour ignorer les bruits faibles
-const delayBeforeHiding = 1000; // 1s
+const delayBeforeHiding = 500; // 1s
 
 (async () => {
     try {
