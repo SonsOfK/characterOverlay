@@ -2,23 +2,17 @@ const obs = new OBSWebSocket();
 
 const assets = {
     gardok: {
-        portraitOn: "assets/portrait_gardok_on.png",
-        portraitOff: "assets/portrait_gardok_off.png",
-        frameOn: "assets/frame_on.png",
-        frameOff: "assets/frame_off.png",
+        portraitOn: "assets/gardok_full_on.png",
+        portraitOff: "assets/gardok__full_off.png",
     },
     meren: {
-        portraitOn: "assets/portrait_meren_on.png",
-        portraitOff: "assets/portrait_meren_off.png",
-        frameOn: "assets/frame_on.png",
-        frameOff: "assets/frame_off.png",
+        portraitOn: "assets/meren_full_on.png",
+        portraitOff: "assets/meren__full_off.png",
     },
 };
 
 const merenPortrait = document.getElementById("meren-portrait");
-const merenFrame = document.getElementById("meren-frame");
 const gardokPortrait = document.getElementById("gardok-portrait");
-const gardokFrame = document.getElementById("gardok-frame");
 
 let timers =  {
     meren: null,
@@ -59,7 +53,6 @@ const delayBeforeHiding = 500; // 1s
 // Fonction pour gérer les changements d'images selon le niveau audio
 function handleAudioLevel(level, character) {
     const portraitElement = document.getElementById(`${character}-portrait`);
-    const frameElement = document.getElementById(`${character}-frame`);
     const asset = assets[character];
 
     if (level > minVolumeThreshold) {
@@ -71,13 +64,11 @@ function handleAudioLevel(level, character) {
 
         // Afficher immédiatement l'image "On"
         portraitElement.src = asset.portraitOn;
-        frameElement.src = asset.frameOn;
     } else {
         // Déclencher un timer pour éviter un changement immédiat à "Off"
         if (!timers[character]) {
             timers[character] = setTimeout(() => {
                 portraitElement.src = asset.portraitOff;
-                frameElement.src = asset.frameOff;
                 timers[character] = null;
             }, delayBeforeHiding);
         }

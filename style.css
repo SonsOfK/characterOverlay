@@ -12,36 +12,20 @@ body {
   height: 100%;
 }
 
-#meren-frame {
+#meren {
   position: absolute;
   bottom: 20px;
   left: 20px;
-  width: 400px;
-  height: 400px;
+  width: 200px;
+  height: 200px;
 }
 
-#gardok-frame {
+#gardok {
   position: absolute;
   bottom: 20px;
   right: 20px;
-  width: 400px;
-  height: 400px;
-}
-
-#meren-portrait {
-  position: absolute;
-  bottom: 40px;
-  left: 40px;
-  width: 350px;
-  height: 350px;
-}
-
-#gardok-portrait {
-  position: absolute;
-  bottom: 40px;
-  left: 40px;
-  width: 350px;
-  height: 350px;
+  width: 200px;
+  height: 200px;
 }
 
 .frame {
@@ -55,5 +39,7 @@ body {
   position: absolute;
   width: 90%;
   height: 90%;
+  top: 5%;
+  left: 5%;
   z-index: 2;
 }
