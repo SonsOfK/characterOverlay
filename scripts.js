@@ -24,6 +24,8 @@ let timers =  {
     meren: null,
     gardok: null,
 }
+
+const minVolumeThreshold = 0.08; // Seuil en dB pour ignorer les bruits faibles
 const delayBeforeHiding = 1000; // 1s
 
 (async () => {
@@ -39,13 +41,13 @@ const delayBeforeHiding = 1000; // 1s
                 if (input.inputName === "audioMeren") {
                     const levels = input.inputLevelsMul.flat(); // Tous les canaux combinés
                     const maxLevel = Math.max(...levels); // Niveau maximum
-                    handleAudioLevel(maxLevel, merenPortrait, merenFrame, assets.meren, timers.meren);
+                    handleAudioLevel(maxLevel, "meren");
                 }
 
                 if (input.inputName === "audioGardok") {
                     const levels = input.inputLevelsMul.flat();
                     const maxLevel = Math.max(...levels);
-                    handleAudioLevel(maxLevel, gardokPortrait, gardokFrame, assets.gardok, timers.gardok);
+                    handleAudioLevel(maxLevel, "gardok");
                 }
             });
         });
@@ -55,14 +57,16 @@ const delayBeforeHiding = 1000; // 1s
 })();
 
 // Fonction pour gérer les changements d'images selon le niveau audio
-function handleAudioLevel(levelDb, portraitElement, frameElement, asset, timer) {
-    const minVolumeThreshold = 0.08; // Seuil en dB pour ignorer les bruits faibles
+function handleAudioLevel(level, character) {
+    const portraitElement = document.getElementById(`${character}-portrait`);
+    const frameElement = document.getElementById(`${character}-frame`);
+    const asset = assets[character];
 
-    if (levelDb > minVolumeThreshold) {
+    if (level > minVolumeThreshold) {
         // Annule le timer si la personne parle
-        if (timer) {
-            clearTimeout(timer);
-            timer = null;
+        if (timers[character]) {
+            clearTimeout(timers[character]);
+            timers[character] = null;
         }
 
         // Afficher immédiatement l'image "On"
@@ -70,11 +74,11 @@ function handleAudioLevel(levelDb, portraitElement, frameElement, asset, timer) 
         frameElement.src = asset.frameOn;
     } else {
         // Déclencher un timer pour éviter un changement immédiat à "Off"
-        if (!timer) {
-            timer = setTimeout(() => {
+        if (!timers[character]) {
+            timers[character] = setTimeout(() => {
                 portraitElement.src = asset.portraitOff;
                 frameElement.src = asset.frameOff;
-                timer = null;
+                timers[character] = null;
             }, delayBeforeHiding);
         }
     }
