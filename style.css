@@ -16,16 +16,12 @@ body {
   position: absolute;
   bottom: 20px;
   left: 20px;
-  width: auto;
-  height: auto;
 }
 
 #gardok {
   position: absolute;
   bottom: 20px;
   right: 20px;
-  width: auto;
-  height: auto;
 }
 
 .frame {
