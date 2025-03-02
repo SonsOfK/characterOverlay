@@ -30,16 +30,16 @@ body {
 
 #meren-portrait {
   position: absolute;
-  bottom: 20px;
-  left: 20px;
+  bottom: 40px;
+  left: 40px;
   width: 350px;
   height: 350px;
 }
 
 #gardok-portrait {
   position: absolute;
-  bottom: 20px;
-  right: 20px;
+  bottom: 40px;
+  left: 40px;
   width: 350px;
   height: 350px;
 }
