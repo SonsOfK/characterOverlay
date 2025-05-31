@@ -15,7 +15,7 @@ body {
 #meren {
   position: absolute;
   bottom: 20px;
-  left: 20px;
+  right: 20px;
   width: 400px;
   height: 400px;
 }
@@ -23,7 +23,7 @@ body {
 #gardok {
   position: absolute;
   bottom: 20px;
-  right: 20px;
+  left: 20px;
   width: 400px;
   height: 400px;
 }
