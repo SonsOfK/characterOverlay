@@ -44,12 +44,16 @@ const delayBeforeHiding = 500; // 1s
 
 // Fonction pour gérer les changements d'images selon le niveau audio
 function handleAudioLevel(level, character) {
+    const frameElement = document.getElementById(`${character}-frame`);
+    
     if (level > minVolumeThreshold) {
         // Annule le timer si la personne parle
         if (timers[character]) {
             clearTimeout(timers[character]);
             timers[character] = null;
         }
+
+        frameElement.src = "assets/screen_border_ok.png"
 
         if (character === "gardok") {
             GardokAnimator.startTalking();
@@ -64,6 +68,8 @@ function handleAudioLevel(level, character) {
 
             timers[character] = setTimeout(() => {
 
+                frameElement.src = "assets/screen_border_off.png";
+                
                 if (character === "gardok") {
                     GardokAnimator.stopTalking();
                 }
