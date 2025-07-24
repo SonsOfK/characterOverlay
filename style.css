@@ -1,3 +1,5 @@
+/* === Style général === */
+
 body {
   margin: 0;
   background: black;
@@ -12,22 +14,55 @@ body {
   height: 100%;
 }
 
-#meren {
+/* === Conteneurs de personnages === */
+#meren,
+#gardok {
   position: absolute;
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+}
+
+#meren {
   bottom: 20px;
   right: 20px;
-  width: 400px;
-  height: 400px;
+  transform: scale(4);
+  transform-origin: bottom right;
 }
 
 #gardok {
-  position: absolute;
   bottom: 20px;
   left: 20px;
-  width: 400px;
-  height: 400px;
+  transform: scale(4);
+  transform-origin: bottom left;
 }
 
+/* === Empilement des couches === */
+.frame_container {
+  width: 64px;
+  height: 64px;
+  position: absolute;
+  image-rendering: pixelated;
+}
+
+.sprite-layer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+
+/*
 .frame {
   position: absolute;
   width: 100%;
@@ -43,3 +78,4 @@ body {
   left: 5%;
   z-index: 2;
 }
+*/

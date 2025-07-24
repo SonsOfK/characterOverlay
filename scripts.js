@@ -1,19 +1,5 @@
 const obs = new OBSWebSocket();
 
-const assets = {
-    gardok: {
-        portraitOn: "assets/gardok_full_on.png",
-        portraitOff: "assets/gardok_full_off.png",
-    },
-    meren: {
-        portraitOn: "assets/meren_full_on.png",
-        portraitOff: "assets/meren_full_off.png",
-    },
-};
-
-const merenPortrait = document.getElementById("meren-portrait");
-const gardokPortrait = document.getElementById("gardok-portrait");
-
 let timers =  {
     meren: null,
     gardok: null,
@@ -25,22 +11,28 @@ const delayBeforeHiding = 500; // 1s
 (async () => {
     try {
         // Connexion à OBS
-        await obs.connect("ws://localhost:4455", "", { eventSubscriptions: OBSWebSocket.EventSubscription.All | OBSWebSocket.EventSubscription.InputVolumeMeters, });
+        await obs.connect("ws://localhost:4455", "", { 
+            eventSubscriptions: OBSWebSocket.EventSubscription.All | 
+                                OBSWebSocket.EventSubscription.InputVolumeMeters, 
+        });
+
         console.log("Connecté à OBS WebSocket !");
 
+        GardokAnimator.init();
+        MerenAnimator.init();
+        
         // Écouter les niveaux audio
         obs.on("InputVolumeMeters", (data) => {
             data.inputs.forEach((input) => {
+                const levels = input.inputLevelsMul.flat(); // Tous les canaux combinés
+                const maxLevel = Math.max(...levels); // Niveau max
+
                 // Gérer les niveaux pour chaque source
                 if (input.inputName === "audioMeren") {
-                    const levels = input.inputLevelsMul.flat(); // Tous les canaux combinés
-                    const maxLevel = Math.max(...levels); // Niveau maximum
                     handleAudioLevel(maxLevel, "meren");
                 }
 
                 if (input.inputName === "audioGardok") {
-                    const levels = input.inputLevelsMul.flat();
-                    const maxLevel = Math.max(...levels);
                     handleAudioLevel(maxLevel, "gardok");
                 }
             });
@@ -52,9 +44,6 @@ const delayBeforeHiding = 500; // 1s
 
 // Fonction pour gérer les changements d'images selon le niveau audio
 function handleAudioLevel(level, character) {
-    const portraitElement = document.getElementById(`${character}-portrait`);
-    const asset = assets[character];
-
     if (level > minVolumeThreshold) {
         // Annule le timer si la personne parle
         if (timers[character]) {
@@ -62,15 +51,30 @@ function handleAudioLevel(level, character) {
             timers[character] = null;
         }
 
-        // Afficher immédiatement l'image "On"
-        portraitElement.src = asset.portraitOn;
+        if (character === "gardok") {
+            GardokAnimator.startTalking();
+        }
+
+        if (character === "meren") {
+            MerenAnimator.startTalking();
+        }
     } else {
         // Déclencher un timer pour éviter un changement immédiat à "Off"
         if (!timers[character]) {
+
             timers[character] = setTimeout(() => {
-                portraitElement.src = asset.portraitOff;
+
+                if (character === "gardok") {
+                    GardokAnimator.stopTalking();
+                }
+
+                if (character === "meren") {
+                    MerenAnimator.stopTalking();
+                }
+
                 timers[character] = null;
             }, delayBeforeHiding);
+
         }
     }
 }

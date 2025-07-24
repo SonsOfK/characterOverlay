@@ -8,17 +8,30 @@
 </head>
 <body>
   <div class="overlay">
-    <!-- Portrait et cadre pour Meren -->
-    <div id="meren" class="frame-container">
-      <img id="meren-portrait" class="portrait" src="assets/meren_full_off.png" alt="Portrait Meren">
+    <div id="meren" class="frame_container">
+      <div id="meren-sprite" class="sprite-layer">
+          <img src="assets/meren_body.png" class="layer">
+          <img id="meren-head" src="assets/meren_head_0.png" class="layer">
+          <img src="assets/meren_hair.png" class="layer">
+          <img id="meren-eye" src="assets/meren_eye_0.png" class="layer">
+      </div>
     </div>
     
     <div id="gardok" class="frame_container">
-      <img id="gardok-portrait" class="portrait" src="assets/gardok_full_off.png" alt="Portrait Gardok">
+      <div id="gardok-sprite" class="sprite-layer">
+        <img src="assets/gardok_body.png" class="layer">
+        <img id="gardok-head" src="assets/gardok_head_0.png" class="layer">
+        <img src="assets/gardok_hair.png" class="layer">
+        <img src="assets/gardok_goggles.png" class="layer">
+        <img id="gardok-left-eye" src="assets/gardok_left_eye_0.png" class="layer">
+        <img id="gardok-right-eye" src="assets/gardok_right_eye_0.png" class="layer">
+      </div>
     </div>    
 
   </div>
   <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js"></script>
   <script src="scripts.js" defer></script>
+  <script src="gardokAnimator.js" defer></script>
+  <script src="merenAnimator.js" defer></script>
 </body>
 </html>
