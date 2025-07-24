@@ -1,0 +1,26 @@
+/* ======= OVERLAY VISUAL EFFECTS ======= */
+
+/* GREEN HUE (sick) */
+.effect-sick {
+  filter: hue-rotate(90deg) saturate(1.5);
+}
+
+/* RAINBOW HAIR : color pulsating effect */
+@keyframes rainbowHue {
+  0% { filter: hue-rotate(0deg) saturate(1.5); }
+  100% { filter: hue-rotate(360deg) saturate(1.5); }
+}
+
+.effect-rainbow img:nth-child(3) {
+  animation: rainbowHue 0.5s linear infinite;
+}
+
+/* ROTATION : cartoon effect */
+@keyframes spinFast {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.effect-roll {
+  animation: spinFast 0.5s linear infinite;
+}

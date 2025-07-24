@@ -5,22 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Overlay Stream</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="effects.css">
 </head>
 <body>
   <div class="overlay">
     <div id="meren" class="frame_container">
       <div id="meren-sprite" class="sprite-layer">
-          <img src="assets/meren_body.png" class="layer">
-          <img id="meren-head" src="assets/meren_head_0.png" class="layer">
-          <img src="assets/meren_hair.png" class="layer">
-          <img id="meren-eye" src="assets/meren_eye_0.png" class="layer">
+          <img src="assets/meren_body.png" class="layer meren-full">
+          <img id="meren-head" src="assets/meren_head_0.png" class="layer meren-full">
+          <img src="assets/meren_hair.png" class="layer meren-full">
+          <img id="meren-eye" src="assets/meren_eye_0.png" class="layer meren-full">
           <img id="meren-frame" src="assets/screen_border_off.png" class="layer frame-overlay">
       </div>
     </div>
     
     <div id="gardok" class="frame_container">
       <div id="gardok-sprite" class="sprite-layer">
-        <img src="assets/gardok_body.png" class="layer">
+        <img src="assets/gardok_body.png" class="layer gardok-full">
         <img id="gardok-head" src="assets/gardok_head_0.png" class="layer gardok-full">
         <img src="assets/gardok_hair.png" class="layer gardok-full">
         <img src="assets/gardok_goggles.png" class="layer gardok-full">
@@ -35,5 +36,6 @@
   <script src="scripts.js" defer></script>
   <script src="gardokAnimator.js" defer></script>
   <script src="merenAnimator.js" defer></script>
+  <script src="effects.js" defer></script>
 </body>
 </html>
