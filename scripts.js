@@ -53,7 +53,7 @@ function handleAudioLevel(level, character) {
             timers[character] = null;
         }
 
-        frameElement.src = "public/assets/screen_border_ok.png"
+        frameElement.src = "assets/screen_border_ok.png"
 
         if (character === "gardok") {
             GardokAnimator.startTalking();
@@ -68,7 +68,7 @@ function handleAudioLevel(level, character) {
 
             timers[character] = setTimeout(() => {
 
-                frameElement.src = "public/assets/screen_border_off.png";
+                frameElement.src = "assets/screen_border_off.png";
                 
                 if (character === "gardok") {
                     GardokAnimator.stopTalking();
