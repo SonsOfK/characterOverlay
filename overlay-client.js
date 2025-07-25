@@ -1,4 +1,4 @@
-const ws = new WebSocket("wss://7f6e35a82a53.ngrok-free.app");
+const ws = new WebSocket("wss://2c54f65d6183.ngrok-free.app");
 
 ws.onopen = () => {
   console.log("✅ Connected to WebSocket server");
