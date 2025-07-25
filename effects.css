@@ -11,7 +11,7 @@
   100% { filter: hue-rotate(360deg) saturate(1.5); }
 }
 
-.effect-rainbow img:nth-child(3) {
+.effect-rainbow .hair {
   animation: rainbowHue 0.5s linear infinite;
 }
 
