@@ -39,7 +39,6 @@ const MerenAnimator = (() => {
   }
 
   function blinkEye() {
-    console.log("Meren: blinking...");
     let frame = 0;
 
     const blinkInterval = setInterval(() => {
