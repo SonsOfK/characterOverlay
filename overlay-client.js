@@ -10,9 +10,23 @@ function connectWebSocket() {
     };
 
     ws.onmessage = (event) => {
-        const [character, effect] = event.data.split(":");
-        console.log(`🎨 Applying effect: ${character} → ${effect}`);
-        if (window.applyOverlayEffect) {
+        try {
+            const msg = JSON.parse(event.data);
+            if (msg && msg.type === "EFFECT_TRIGGER" && window.applyOverlayEffect) {
+                window.applyOverlayEffect(msg.char, msg.effect, msg.durationMs);
+            }
+            return;
+        } catch (_) {
+            // not JSON, fall through
+        }
+
+        if (
+            typeof event.data === "string" &&
+            event.data.includes(":") &&
+            window.applyOverlayEffect
+        ) {
+            const [character, effect] = event.data.split(":");
+            console.log(`🎨 Applying effect: ${character} → ${effect}`);
             window.applyOverlayEffect(character, effect);
         }
     };
