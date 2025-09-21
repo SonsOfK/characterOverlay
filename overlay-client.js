@@ -3,7 +3,7 @@ let currentWsUrl = null;
 const configUrl = "https"
 
 function connectWebSocket() {
-    ws = new WebSocket("wss://e0447ef5f9f5.ngrok-free.app");
+    ws = new WebSocket("wss://sonsofk.fr");
 
     ws.onopen = () => {
         console.log("✅ Connected to WebSocket server ");
