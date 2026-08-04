@@ -1,6 +1,7 @@
 let ws;
 let reconnectTimer = null;
 let microphoneStarted = false;
+let pendingVoiceLevel = null;
 
 const WS_URL = "wss://sonsofk.fr";
 const params = new URLSearchParams(window.location.search);
@@ -13,13 +14,10 @@ function connectWebSocket() {
 
     ws.onopen = () => {
         console.log(`✅ Connected to WebSocket server as ${role}`);
-        updateSenderStatus("Connecté au serveur", true);
+        updateSenderConnectionStatus("Serveur connecté", true);
 
-        if (microphoneRoles.has(role)) {
-            startMicrophone(role).catch((error) => {
-                console.error(`Impossible d'activer le micro de ${role} :`, error);
-                updateSenderStatus("Micro refusé ou indisponible", false);
-            });
+        if (pendingVoiceLevel !== null) {
+            sendVoiceLevel(role, pendingVoiceLevel);
         }
     };
 
@@ -29,7 +27,6 @@ function connectWebSocket() {
         try {
             msg = JSON.parse(event.data);
         } catch (_) {
-            // Compatibilité avec les anciens messages "character:effect".
             if (
                 typeof event.data === "string" &&
                 event.data.includes(":") &&
@@ -58,23 +55,25 @@ function connectWebSocket() {
 
     ws.onerror = (error) => {
         console.error("WebSocket error:", error);
-        updateSenderStatus("Erreur WebSocket", false);
+        updateSenderConnectionStatus("Erreur WebSocket", false);
     };
 
     ws.onclose = () => {
         console.warn("🔌 WebSocket closed. Reconnecting in 5s...");
-        updateSenderStatus("Déconnecté — reconnexion…", false);
+        updateSenderConnectionStatus("Serveur déconnecté — reconnexion…", false);
         clearTimeout(reconnectTimer);
         reconnectTimer = setTimeout(connectWebSocket, 5000);
     };
 }
 
 async function startMicrophone(character) {
-    if (microphoneStarted) {
-        return;
+    if (microphoneStarted) return;
+
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+        throw new Error("getUserMedia indisponible : la page doit être ouverte en HTTPS dans un navigateur compatible.");
     }
 
-    microphoneStarted = true;
+    updateMicrophoneStatus("Demande d’autorisation…", false);
 
     const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -84,6 +83,8 @@ async function startMicrophone(character) {
         },
         video: false
     });
+
+    microphoneStarted = true;
 
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     const audioContext = new AudioContextClass();
@@ -109,14 +110,10 @@ async function startMicrophone(character) {
 
         const rms = Math.sqrt(sumSquares / samples.length);
         const level = Math.min(1, rms * 4);
+        pendingVoiceLevel = level;
 
-        if (timestamp - lastSentAt >= 50 && ws?.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-                type: "VOICE_LEVEL",
-                char: character,
-                level,
-                token: relayToken
-            }));
+        if (timestamp - lastSentAt >= 50) {
+            sendVoiceLevel(character, level);
             lastSentAt = timestamp;
         }
 
@@ -125,12 +122,31 @@ async function startMicrophone(character) {
     }
 
     console.log(`🎙️ Microphone de ${character} activé`);
-    updateSenderStatus(`Micro ${character} actif`, true);
+    updateMicrophoneStatus(`Micro ${character} actif`, true);
+    setStartButtonVisible(false);
     requestAnimationFrame(publishLevel);
 }
 
-function updateSenderStatus(text, ok) {
-    const status = document.getElementById("sender-status");
+function sendVoiceLevel(character, level) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    ws.send(JSON.stringify({
+        type: "VOICE_LEVEL",
+        char: character,
+        level,
+        token: relayToken
+    }));
+}
+
+function updateSenderConnectionStatus(text, ok) {
+    const status = document.getElementById("sender-connection-status");
+    if (!status) return;
+    status.textContent = text;
+    status.dataset.ok = String(ok);
+}
+
+function updateMicrophoneStatus(text, ok) {
+    const status = document.getElementById("sender-microphone-status");
     if (!status) return;
     status.textContent = text;
     status.dataset.ok = String(ok);
@@ -142,4 +158,30 @@ function updateSenderMeter(level) {
     meter.style.width = `${Math.min(100, Math.round(level * 100))}%`;
 }
 
+function setStartButtonVisible(visible) {
+    const button = document.getElementById("start-microphone");
+    if (button) button.hidden = !visible;
+}
+
+function initializeMicrophonePage() {
+    if (!microphoneRoles.has(role)) return;
+
+    const button = document.getElementById("start-microphone");
+    button?.addEventListener("click", () => {
+        startMicrophone(role).catch((error) => {
+            console.error(`Impossible d'activer le micro de ${role}:`, error);
+            updateMicrophoneStatus(`Micro indisponible : ${error.message}`, false);
+            setStartButtonVisible(true);
+        });
+    });
+
+    // Tentative automatique. Le bouton reste disponible si le navigateur exige un geste utilisateur.
+    startMicrophone(role).catch((error) => {
+        console.warn("Activation automatique du micro impossible :", error);
+        updateMicrophoneStatus("Clique sur « Activer le micro »", false);
+        setStartButtonVisible(true);
+    });
+}
+
 connectWebSocket();
+initializeMicrophonePage();

@@ -35,13 +35,17 @@
 
   </div>
 
-  <main id="sender-panel" hidden style="font-family: sans-serif; padding: 24px; max-width: 520px;">
+  <main id="sender-panel" hidden style="font-family: sans-serif; padding: 24px; max-width: 520px; color: rgb(119, 82, 135); background: #111; min-height: 100vh; box-sizing: border-box;">
     <h1>Micro <span id="sender-name"></span></h1>
-    <p id="sender-status">Connexion…</p>
-    <div style="height: 18px; background: #222; border-radius: 9px; overflow: hidden;">
+    <p>WebSocket : <strong id="sender-connection-status">Connexion…</strong></p>
+    <p>Microphone : <strong id="sender-microphone-status">Initialisation…</strong></p>
+    <button id="start-microphone" type="button" style="padding: 10px 16px; margin: 8px 0 18px; cursor: pointer;">
+      Activer le micro
+    </button>
+    <div style="height: 18px; background: #492c64; border-radius: 9px; overflow: hidden;">
       <div id="sender-meter-fill" style="height: 100%; width: 0%; background: #fff; transition: width 50ms linear;"></div>
     </div>
-    <p>Garde cette page ouverte pendant le stream bro.</p>
+    <p>Garde cette page ouverte pendant le stream.</p>
   </main>
 
   <script src="gardokAnimator.js" defer></script>
