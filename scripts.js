@@ -1,86 +1,70 @@
-const obs = new OBSWebSocket();
-
-let timers =  {
+let timers = {
     meren: null,
     gardok: null,
+};
+
+const minVolumeThreshold = 0.08;
+const delayBeforeHiding = 500;
+const params = new URLSearchParams(window.location.search);
+const role = (params.get("role") || "overlay").toLowerCase();
+
+function initAnimators() {
+    GardokAnimator.init();
+    MerenAnimator.init();
 }
 
-const minVolumeThreshold = 0.08; // Seuil en dB pour ignorer les bruits faibles
-const delayBeforeHiding = 500; // 1s
+function configurePageMode() {
+    const isMicrophoneSender = role === "meren" || role === "gardok";
+    const overlay = document.querySelector(".overlay");
+    const senderPanel = document.getElementById("sender-panel");
+    const senderName = document.getElementById("sender-name");
 
-(async () => {
-    try {
-        // Connexion à OBS
-        await obs.connect("ws://localhost:4455", "", { 
-            eventSubscriptions: OBSWebSocket.EventSubscription.All | 
-                                OBSWebSocket.EventSubscription.InputVolumeMeters, 
-        });
-
-        console.log("Connecté à OBS WebSocket !");
-
-        GardokAnimator.init();
-        MerenAnimator.init();
-        
-        // Écouter les niveaux audio
-        obs.on("InputVolumeMeters", (data) => {
-            data.inputs.forEach((input) => {
-                const levels = input.inputLevelsMul.flat(); // Tous les canaux combinés
-                const maxLevel = Math.max(...levels); // Niveau max
-
-                // Gérer les niveaux pour chaque source
-                if (input.inputName === "audioMeren") {
-                    handleAudioLevel(maxLevel, "meren");
-                }
-
-                if (input.inputName === "audioGardok") {
-                    handleAudioLevel(maxLevel, "gardok");
-                }
-            });
-        });
-    } catch (error) {
-        console.error("Erreur de connexion ou de souscription :", error);
+    if (isMicrophoneSender) {
+        if (overlay) overlay.hidden = true;
+        if (senderPanel) senderPanel.hidden = false;
+        if (senderName) senderName.textContent = role === "meren" ? "Meren" : "Gardok";
+    } else {
+        if (overlay) overlay.hidden = false;
+        if (senderPanel) senderPanel.hidden = true;
     }
-})();
+}
 
-// Fonction pour gérer les changements d'images selon le niveau audio
 function handleAudioLevel(level, character) {
     const frameElement = document.getElementById(`${character}-frame`);
-    
+    if (!frameElement) return;
+
     if (level > minVolumeThreshold) {
-        // Annule le timer si la personne parle
         if (timers[character]) {
             clearTimeout(timers[character]);
             timers[character] = null;
         }
 
-        frameElement.src = "assets/screen_border_ok.png"
+        frameElement.src = "assets/screen_border_ok.png";
 
         if (character === "gardok") {
             GardokAnimator.startTalking();
-        }
-
-        if (character === "meren") {
+        } else if (character === "meren") {
             MerenAnimator.startTalking();
         }
-    } else {
-        // Déclencher un timer pour éviter un changement immédiat à "Off"
-        if (!timers[character]) {
+        return;
+    }
 
-            timers[character] = setTimeout(() => {
+    if (!timers[character]) {
+        timers[character] = setTimeout(() => {
+            frameElement.src = "assets/screen_border_off.png";
 
-                frameElement.src = "assets/screen_border_off.png";
-                
-                if (character === "gardok") {
-                    GardokAnimator.stopTalking();
-                }
+            if (character === "gardok") {
+                GardokAnimator.stopTalking();
+            } else if (character === "meren") {
+                MerenAnimator.stopTalking();
+            }
 
-                if (character === "meren") {
-                    MerenAnimator.stopTalking();
-                }
-
-                timers[character] = null;
-            }, delayBeforeHiding);
-
-        }
+            timers[character] = null;
+        }, delayBeforeHiding);
     }
 }
+
+window.handleAudioLevel = handleAudioLevel;
+
+initAnimators();
+configurePageMode();
