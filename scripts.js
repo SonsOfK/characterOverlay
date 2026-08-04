@@ -3,8 +3,8 @@ let timers = {
     gardok: null,
 };
 
-const minVolumeThreshold = 0.04;
-const delayBeforeHiding = 300;
+const minVolumeThreshold = 0.025;
+const delayBeforeHiding = 350;
 const params = new URLSearchParams(window.location.search);
 const role = (params.get("role") || "overlay").toLowerCase();
 

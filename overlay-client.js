@@ -7,14 +7,11 @@
 
     const MICROPHONE_CONFIG = {
         fftSize: 1024,
-        smoothingTimeConstant: 0.8,
-
+        smoothingTimeConstant: 0.75,
         // Niveau minimal considéré comme du bruit ambiant.
-        noiseFloor: 0.008,
-
+        noiseFloor: 0.02,
         // Amplification appliquée après retrait du bruit ambiant.
-        amplification: 14,
-
+        amplification: 10,
         // Évite d'envoyer inutilement 60 messages par seconde.
         sendIntervalMs: 50
     };
@@ -282,10 +279,8 @@
             rms - MICROPHONE_CONFIG.noiseFloor
         );
 
-        const level = Math.min(
-            1,
-            levelAboveNoise * MICROPHONE_CONFIG.amplification
-        );
+        const normalized = levelAboveNoise * MICROPHONE_CONFIG.amplification;
+        const level = Math.min(1, normalized * normalized);
 
         updateVolumeMeter(level);
         sendVoiceLevel(level);
