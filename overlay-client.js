@@ -1,7 +1,9 @@
-let ws;
+let ws = null;
 let reconnectTimer = null;
 let microphoneStarted = false;
 let pendingVoiceLevel = null;
+let activeStream = null;
+let activeAudioContext = null;
 
 const WS_URL = "wss://sonsofk.fr";
 const params = new URLSearchParams(window.location.search);
@@ -10,13 +12,20 @@ const relayToken = params.get("token") || "";
 const microphoneRoles = new Set(["meren", "gardok"]);
 
 function connectWebSocket() {
-    ws = new WebSocket(WS_URL);
+    try {
+        ws = new WebSocket(WS_URL);
+    } catch (error) {
+        console.error("Impossible de créer le WebSocket :", error);
+        updateSenderConnectionStatus(`Erreur : ${error.message}`, false);
+        scheduleReconnect();
+        return;
+    }
 
     ws.onopen = () => {
         console.log(`✅ Connected to WebSocket server as ${role}`);
         updateSenderConnectionStatus("Serveur connecté", true);
 
-        if (pendingVoiceLevel !== null) {
+        if (pendingVoiceLevel !== null && microphoneRoles.has(role)) {
             sendVoiceLevel(role, pendingVoiceLevel);
         }
     };
@@ -27,11 +36,7 @@ function connectWebSocket() {
         try {
             msg = JSON.parse(event.data);
         } catch (_) {
-            if (
-                typeof event.data === "string" &&
-                event.data.includes(":") &&
-                window.applyOverlayEffect
-            ) {
+            if (typeof event.data === "string" && event.data.includes(":") && window.applyOverlayEffect) {
                 const [character, effect] = event.data.split(":");
                 window.applyOverlayEffect(character, effect);
             }
@@ -61,21 +66,34 @@ function connectWebSocket() {
     ws.onclose = () => {
         console.warn("🔌 WebSocket closed. Reconnecting in 5s...");
         updateSenderConnectionStatus("Serveur déconnecté — reconnexion…", false);
-        clearTimeout(reconnectTimer);
-        reconnectTimer = setTimeout(connectWebSocket, 5000);
+        scheduleReconnect();
     };
 }
 
-async function startMicrophone(character) {
-    if (microphoneStarted) return;
+function scheduleReconnect() {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connectWebSocket, 5000);
+}
 
-    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-        throw new Error("getUserMedia indisponible : la page doit être ouverte en HTTPS dans un navigateur compatible.");
+async function startMicrophone(character) {
+    if (microphoneStarted) {
+        updateMicrophoneStatus(`Micro ${character} déjà actif`, true);
+        return;
     }
 
-    updateMicrophoneStatus("Demande d’autorisation…", false);
+    updateMicrophoneStatus("Vérification du navigateur…", false);
 
-    const stream = await navigator.mediaDevices.getUserMedia({
+    if (!window.isSecureContext) {
+        throw new Error(`contexte non sécurisé (${location.protocol}). Utilise bien l'URL HTTPS.`);
+    }
+
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function") {
+        throw new Error("getUserMedia n'est pas disponible dans ce navigateur.");
+    }
+
+    updateMicrophoneStatus("Demande d’autorisation au navigateur…", false);
+
+    activeStream = await navigator.mediaDevices.getUserMedia({
         audio: {
             echoCancellation: true,
             noiseSuppression: true,
@@ -84,29 +102,33 @@ async function startMicrophone(character) {
         video: false
     });
 
-    microphoneStarted = true;
-
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    const audioContext = new AudioContextClass();
-    await audioContext.resume();
+    if (!AudioContextClass) {
+        activeStream.getTracks().forEach((track) => track.stop());
+        throw new Error("AudioContext n'est pas disponible dans ce navigateur.");
+    }
 
-    const source = audioContext.createMediaStreamSource(stream);
-    const analyser = audioContext.createAnalyser();
+    activeAudioContext = new AudioContextClass();
+    if (activeAudioContext.state === "suspended") {
+        await activeAudioContext.resume();
+    }
 
+    const source = activeAudioContext.createMediaStreamSource(activeStream);
+    const analyser = activeAudioContext.createAnalyser();
     analyser.fftSize = 1024;
     analyser.smoothingTimeConstant = 0.35;
     source.connect(analyser);
 
+    microphoneStarted = true;
     const samples = new Float32Array(analyser.fftSize);
     let lastSentAt = 0;
 
     function publishLevel(timestamp) {
-        analyser.getFloatTimeDomainData(samples);
+        if (!microphoneStarted) return;
 
+        analyser.getFloatTimeDomainData(samples);
         let sumSquares = 0;
-        for (const sample of samples) {
-            sumSquares += sample * sample;
-        }
+        for (const sample of samples) sumSquares += sample * sample;
 
         const rms = Math.sqrt(sumSquares / samples.length);
         const level = Math.min(1, rms * 4);
@@ -125,6 +147,37 @@ async function startMicrophone(character) {
     updateMicrophoneStatus(`Micro ${character} actif`, true);
     setStartButtonVisible(false);
     requestAnimationFrame(publishLevel);
+}
+
+async function startMicrophoneFromButton() {
+    const button = document.getElementById("start-microphone");
+    if (button) button.disabled = true;
+
+    try {
+        await startMicrophone(role);
+    } catch (error) {
+        console.error(`Impossible d'activer le micro de ${role}:`, error);
+        const details = getMicrophoneErrorMessage(error);
+        updateMicrophoneStatus(details, false);
+        setStartButtonVisible(true);
+    } finally {
+        if (button && !microphoneStarted) button.disabled = false;
+    }
+}
+
+function getMicrophoneErrorMessage(error) {
+    switch (error?.name) {
+        case "NotAllowedError":
+            return "Accès refusé. Autorise le micro via l’icône cadenas de la barre d’adresse, puis recharge la page.";
+        case "NotFoundError":
+            return "Aucun microphone détecté.";
+        case "NotReadableError":
+            return "Le microphone est déjà utilisé ou inaccessible au navigateur.";
+        case "AbortError":
+            return "Activation du microphone interrompue. Réessaie.";
+        default:
+            return `Micro indisponible : ${error?.message || "erreur inconnue"}`;
+    }
 }
 
 function sendVoiceLevel(character, level) {
@@ -163,25 +216,19 @@ function setStartButtonVisible(visible) {
     if (button) button.hidden = !visible;
 }
 
-function initializeMicrophonePage() {
-    if (!microphoneRoles.has(role)) return;
-
-    const button = document.getElementById("start-microphone");
-    button?.addEventListener("click", () => {
-        startMicrophone(role).catch((error) => {
-            console.error(`Impossible d'activer le micro de ${role}:`, error);
-            updateMicrophoneStatus(`Micro indisponible : ${error.message}`, false);
-            setStartButtonVisible(true);
-        });
-    });
-
-    // Tentative automatique. Le bouton reste disponible si le navigateur exige un geste utilisateur.
-    startMicrophone(role).catch((error) => {
-        console.warn("Activation automatique du micro impossible :", error);
+function initializePage() {
+    if (microphoneRoles.has(role)) {
         updateMicrophoneStatus("Clique sur « Activer le micro »", false);
         setStartButtonVisible(true);
-    });
+    }
+
+    connectWebSocket();
 }
 
-connectWebSocket();
-initializeMicrophonePage();
+window.startMicrophoneFromButton = startMicrophoneFromButton;
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializePage, { once: true });
+} else {
+    initializePage();
+}
