@@ -23,7 +23,7 @@
     let audioContext = null;
     let analyser = null;
     let microphoneSource = null;
-    let animationFrameId = null;
+    let microphoneIntervalId  = null;
 
     let lastSentAt = 0;
     let microphoneStarted = false;
@@ -156,6 +156,16 @@
         window.applyOverlayEffect(character, effect);
     }
 
+    function startMicrophoneAnalysis() {
+    if (microphoneIntervalId !== null) {
+        clearInterval(microphoneIntervalId);
+    }
+
+    microphoneIntervalId = setInterval(() => {
+        readMicrophoneLevel();
+    }, MICROPHONE_CONFIG.sendIntervalMs);
+}
+
     async function startMicrophone() {
         if (!isMicrophonePage()) {
             updateMicrophoneStatus("Aucun rôle micro sélectionné");
@@ -219,7 +229,7 @@
 
             console.log(`🎤 Microphone ${role} actif`);
 
-            readMicrophoneLevel();
+            startMicrophoneAnalysis();
         } catch (error) {
             microphoneStarted = false;
 
@@ -262,7 +272,6 @@
         }
 
         const samples = new Float32Array(analyser.fftSize);
-
         analyser.getFloatTimeDomainData(samples);
 
         let sumSquares = 0;
@@ -279,14 +288,16 @@
             rms - MICROPHONE_CONFIG.noiseFloor
         );
 
-        const normalized = levelAboveNoise * MICROPHONE_CONFIG.amplification;
-        const level = Math.min(1, normalized * normalized);
+        const normalized =
+            levelAboveNoise * MICROPHONE_CONFIG.amplification;
+
+        const level = Math.min(
+            1,
+            normalized * normalized
+        );
 
         updateVolumeMeter(level);
         sendVoiceLevel(level);
-
-        animationFrameId =
-            requestAnimationFrame(readMicrophoneLevel);
     }
 
     function sendVoiceLevel(level) {
@@ -321,9 +332,9 @@
     async function stopMicrophone() {
         microphoneStarted = false;
 
-        if (animationFrameId !== null) {
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
+        if (microphoneIntervalId !== null) {
+            clearInterval(microphoneIntervalId);
+            microphoneIntervalId = null;
         }
 
         if (microphoneSource) {
