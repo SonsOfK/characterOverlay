@@ -37,6 +37,9 @@
 
   <main id="sender-panel" hidden style="font-family: sans-serif; padding: 24px; max-width: 520px; color: rgb(119, 82, 135); background: #111; min-height: 100vh; box-sizing: border-box;">
     <h1>Micro <span id="sender-name"></span></h1>
+    <label for="publisher-token">Token de publication</label>
+    <input id="publisher-token" type="password" autocomplete="off" placeholder="Coller le token Streamer.bot" style="display: block; box-sizing: border-box; width: 100%; padding: 10px; margin: 8px 0;">
+    <small>Le token est uniquement conservé en mémoire le temps de l'authentification.</small>
     <p>WebSocket : <strong id="sender-connection-status">Connexion…</strong></p>
     <p>Microphone : <strong id="sender-microphone-status">Initialisation…</strong></p>
     <button id="start-microphone" type="button" onclick="window.startMicrophoneFromButton()" style="padding: 10px 16px; margin: 8px 0 18px; cursor: pointer;">

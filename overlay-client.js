@@ -27,6 +27,8 @@
 
     let lastSentAt = 0;
     let microphoneStarted = false;
+    let publisherAuthenticated = false;
+    let pendingAuthentication = null;
 
     function isMicrophonePage() {
         return VALID_ROLES.includes(role);
@@ -37,7 +39,7 @@
     }
 
     function updateWebSocketStatus(text) {
-        const element = getElement("websocket-status");
+        const element = getElement("sender-connection-status");
 
         if (element) {
             element.textContent = text;
@@ -45,7 +47,7 @@
     }
 
     function updateMicrophoneStatus(text) {
-        const element = getElement("microphone-status");
+        const element = getElement("sender-microphone-status");
 
         if (element) {
             element.textContent = text;
@@ -53,7 +55,7 @@
     }
 
     function updateVolumeMeter(level) {
-        const meter = getElement("microphone-level");
+        const meter = getElement("sender-meter-fill");
 
         if (!meter) {
             return;
@@ -80,7 +82,11 @@
 
         ws.onopen = () => {
             console.log("✅ WebSocket connecté");
-            updateWebSocketStatus("Serveur connecté");
+            updateWebSocketStatus(
+                isMicrophonePage()
+                    ? "Serveur connecté — authentification requise"
+                    : "Serveur connecté"
+            );
         };
 
         ws.onmessage = event => {
@@ -95,6 +101,14 @@
         ws.onclose = () => {
             console.warn("🔌 WebSocket fermé");
             updateWebSocketStatus("Serveur déconnecté");
+            publisherAuthenticated = false;
+            rejectPendingAuthentication("Connexion au serveur interrompue");
+
+            if (microphoneStarted) {
+                stopMicrophone().catch(error => {
+                    console.error("❌ Impossible d'arrêter le microphone :", error);
+                });
+            }
 
             ws = null;
 
@@ -109,6 +123,25 @@
     function handleWebSocketMessage(rawData) {
         try {
             const message = JSON.parse(rawData);
+
+            if (message.type === "AUTH_RESULT") {
+                if (message.ok) {
+                    publisherAuthenticated = true;
+                    updateWebSocketStatus("Serveur authentifié");
+                    resolvePendingAuthentication();
+                } else {
+                    publisherAuthenticated = false;
+                    updateWebSocketStatus("Token refusé");
+                    rejectPendingAuthentication("Token refusé");
+                }
+                return;
+            }
+
+            if (message.type === "ERROR" && message.code === "AUTH_REQUIRED") {
+                publisherAuthenticated = false;
+                updateWebSocketStatus("Authentification requise");
+                return;
+            }
 
             if (
                 message.type === "VOICE_LEVEL" &&
@@ -164,7 +197,78 @@
     microphoneIntervalId = setInterval(() => {
         readMicrophoneLevel();
     }, MICROPHONE_CONFIG.sendIntervalMs);
-}
+    }
+
+    function waitForWebSocketOpen() {
+        if (ws?.readyState === WebSocket.OPEN) {
+            return Promise.resolve();
+        }
+
+        connectWebSocket();
+
+        return new Promise((resolve, reject) => {
+            const socket = ws;
+            const timeoutId = setTimeout(() => {
+                cleanup();
+                reject(new Error("Le serveur ne répond pas"));
+            }, 5000);
+
+            function cleanup() {
+                clearTimeout(timeoutId);
+                socket?.removeEventListener("open", handleOpen);
+                socket?.removeEventListener("error", handleError);
+                socket?.removeEventListener("close", handleClose);
+            }
+
+            function handleOpen() {
+                cleanup();
+                resolve();
+            }
+
+            function handleError() {
+                cleanup();
+                reject(new Error("Connexion au serveur impossible"));
+            }
+
+            function handleClose() {
+                cleanup();
+                reject(new Error("Connexion au serveur interrompue"));
+            }
+
+            socket?.addEventListener("open", handleOpen, { once: true });
+            socket?.addEventListener("error", handleError, { once: true });
+            socket?.addEventListener("close", handleClose, { once: true });
+        });
+    }
+
+    function resolvePendingAuthentication() {
+        if (!pendingAuthentication) return;
+        clearTimeout(pendingAuthentication.timeoutId);
+        pendingAuthentication.resolve();
+        pendingAuthentication = null;
+    }
+
+    function rejectPendingAuthentication(message) {
+        if (!pendingAuthentication) return;
+        clearTimeout(pendingAuthentication.timeoutId);
+        pendingAuthentication.reject(new Error(message));
+        pendingAuthentication = null;
+    }
+
+    async function authenticatePublisher(token) {
+        await waitForWebSocketOpen();
+
+        return new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
+                if (pendingAuthentication?.timeoutId !== timeoutId) return;
+                pendingAuthentication = null;
+                reject(new Error("L'authentification a expiré"));
+            }, 5000);
+
+            pendingAuthentication = { resolve, reject, timeoutId };
+            ws.send(JSON.stringify({ type: "AUTH", token }));
+        });
+    }
 
     async function startMicrophone() {
         if (!isMicrophonePage()) {
@@ -175,6 +279,28 @@
         if (microphoneStarted) {
             updateMicrophoneStatus(`Micro ${role} déjà actif`);
             return;
+        }
+
+        const tokenInput = getElement("publisher-token");
+        const token = tokenInput?.value.trim();
+
+        if (!publisherAuthenticated) {
+            if (!token) {
+                updateWebSocketStatus("Colle d'abord le token Streamer.bot");
+                tokenInput?.focus();
+                return;
+            }
+
+            updateWebSocketStatus("Authentification…");
+
+            try {
+                await authenticatePublisher(token);
+            } catch (error) {
+                updateWebSocketStatus(error.message);
+                return;
+            } finally {
+                if (tokenInput) tokenInput.value = "";
+            }
         }
 
         if (
@@ -303,6 +429,7 @@
     function sendVoiceLevel(level) {
         if (
             !isMicrophonePage() ||
+            !publisherAuthenticated ||
             !ws ||
             ws.readyState !== WebSocket.OPEN
         ) {
