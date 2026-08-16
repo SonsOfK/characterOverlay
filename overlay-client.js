@@ -9,7 +9,7 @@
         fftSize: 1024,
         smoothingTimeConstant: 0.75,
         // Niveau minimal considéré comme du bruit ambiant.
-        noiseFloor: 0.02,
+        noiseFloor: 0.01,
         // Amplification appliquée après retrait du bruit ambiant.
         amplification: 10,
         // Évite d'envoyer inutilement 60 messages par seconde.
@@ -417,10 +417,9 @@
         const normalized =
             levelAboveNoise * MICROPHONE_CONFIG.amplification;
 
-        const level = Math.min(
-            1,
-            normalized * normalized
-        );
+        // Une réponse linéaire conserve mieux les voix faibles que la
+        // transformation au carré utilisée auparavant.
+        const level = Math.min(1, normalized);
 
         updateVolumeMeter(level);
         sendVoiceLevel(level);

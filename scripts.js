@@ -3,7 +3,8 @@ let timers = {
     gardok: null,
 };
 
-const minVolumeThreshold = 0.025;
+// Avec le niveau micro linéaire, ce seuil correspond à environ -35 dBFS.
+const minVolumeThreshold = 0.08;
 const delayBeforeHiding = 350;
 const params = new URLSearchParams(window.location.search);
 const role = (params.get("role") || "overlay").toLowerCase();
