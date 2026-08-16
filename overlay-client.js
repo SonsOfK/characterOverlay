@@ -23,9 +23,12 @@
     let audioContext = null;
     let analyser = null;
     let microphoneSource = null;
-    let microphoneIntervalId  = null;
+    let microphoneWorklet = null;
+    let silentOutput = null;
+    let microphoneIntervalId = null;
 
     let lastSentAt = 0;
+    let pendingVoiceLevel = 0;
     let microphoneStarted = false;
     let publisherAuthenticated = false;
     let pendingAuthentication = null;
@@ -190,13 +193,71 @@
     }
 
     function startMicrophoneAnalysis() {
-    if (microphoneIntervalId !== null) {
-        clearInterval(microphoneIntervalId);
+        if (microphoneIntervalId !== null) {
+            clearInterval(microphoneIntervalId);
+        }
+
+        microphoneIntervalId = setInterval(() => {
+            readMicrophoneLevel();
+        }, MICROPHONE_CONFIG.sendIntervalMs);
     }
 
-    microphoneIntervalId = setInterval(() => {
-        readMicrophoneLevel();
-    }, MICROPHONE_CONFIG.sendIntervalMs);
+    async function setupMicrophoneAnalysis() {
+        if (
+            audioContext.audioWorklet &&
+            typeof window.AudioWorkletNode === "function"
+        ) {
+            try {
+                await audioContext.audioWorklet.addModule(
+                    "microphone-level-processor.js"
+                );
+
+                microphoneWorklet = new AudioWorkletNode(
+                    audioContext,
+                    "microphone-level-processor"
+                );
+
+                silentOutput = audioContext.createGain();
+                silentOutput.gain.value = 0;
+
+                microphoneWorklet.port.onmessage = event => {
+                    const rms = Number(event.data?.rms);
+
+                    if (Number.isFinite(rms)) {
+                        processMicrophoneRms(rms);
+                    }
+                };
+
+                // La sortie silencieuse maintient le graphe audio actif sans
+                // renvoyer le son du micro dans les enceintes.
+                microphoneSource.connect(microphoneWorklet);
+                microphoneWorklet.connect(silentOutput);
+                silentOutput.connect(audioContext.destination);
+
+                return "AudioWorklet";
+            } catch (error) {
+                console.warn(
+                    "⚠️ AudioWorklet indisponible, utilisation du mode de secours :",
+                    error
+                );
+
+                microphoneSource.disconnect();
+                microphoneWorklet?.disconnect();
+                silentOutput?.disconnect();
+                microphoneWorklet = null;
+                silentOutput = null;
+            }
+        }
+
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = MICROPHONE_CONFIG.fftSize;
+        analyser.smoothingTimeConstant =
+            MICROPHONE_CONFIG.smoothingTimeConstant;
+
+        microphoneSource.connect(analyser);
+        startMicrophoneAnalysis();
+
+        return "timer de secours";
     }
 
     function waitForWebSocketOpen() {
@@ -339,23 +400,18 @@
                 await audioContext.resume();
             }
 
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = MICROPHONE_CONFIG.fftSize;
-            analyser.smoothingTimeConstant =
-                MICROPHONE_CONFIG.smoothingTimeConstant;
-
             microphoneSource =
                 audioContext.createMediaStreamSource(microphoneStream);
 
-            microphoneSource.connect(analyser);
+            const analysisMode = await setupMicrophoneAnalysis();
 
             microphoneStarted = true;
 
             updateMicrophoneStatus(`Micro ${role} actif`);
 
-            console.log(`🎤 Microphone ${role} actif`);
-
-            startMicrophoneAnalysis();
+            console.log(
+                `🎤 Microphone ${role} actif — analyse ${analysisMode}`
+            );
         } catch (error) {
             microphoneStarted = false;
 
@@ -409,6 +465,10 @@
 
         const rms = Math.sqrt(sumSquares / samples.length);
 
+        processMicrophoneRms(rms);
+    }
+
+    function processMicrophoneRms(rms) {
         const levelAboveNoise = Math.max(
             0,
             rms - MICROPHONE_CONFIG.noiseFloor
@@ -435,6 +495,9 @@
             return;
         }
 
+        const clampedLevel = Math.max(0, Math.min(1, level));
+        pendingVoiceLevel = Math.max(pendingVoiceLevel, clampedLevel);
+
         const now = performance.now();
 
         if (
@@ -445,22 +508,37 @@
         }
 
         lastSentAt = now;
+        const levelToSend = pendingVoiceLevel;
+        pendingVoiceLevel = 0;
 
         ws.send(
             JSON.stringify({
                 type: "VOICE_LEVEL",
                 char: role,
-                level: Math.max(0, Math.min(1, level))
+                level: levelToSend
             })
         );
     }
 
     async function stopMicrophone() {
         microphoneStarted = false;
+        pendingVoiceLevel = 0;
 
         if (microphoneIntervalId !== null) {
             clearInterval(microphoneIntervalId);
             microphoneIntervalId = null;
+        }
+
+        if (microphoneWorklet) {
+            microphoneWorklet.port.onmessage = null;
+            microphoneWorklet.port.close();
+            microphoneWorklet.disconnect();
+            microphoneWorklet = null;
+        }
+
+        if (silentOutput) {
+            silentOutput.disconnect();
+            silentOutput = null;
         }
 
         if (microphoneSource) {
